@@ -1,9 +1,11 @@
 """
 API 라우터 - 뉴스 관련 엔드포인트
 """
+from typing import Any, Dict, List
+
 from fastapi import APIRouter, Query
-from typing import List, Dict, Any
-from ..services import get_finnhub_client
+
+from ..services import get_rss_news_service, get_yfinance_client
 
 router = APIRouter(prefix="/api/news", tags=["News"])
 
@@ -17,8 +19,51 @@ async def get_market_news(
     limit: int = Query(default=20, ge=1, le=100)
 ) -> List[Dict[str, Any]]:
     """시장 뉴스 조회"""
-    finnhub = get_finnhub_client()
-    news = finnhub.get_market_news(category)
+    yfinance = get_yfinance_client()
+    news = yfinance.get_market_news(category)
     
     # 제한된 개수만 반환
     return news[:limit] if news else []
+
+
+@router.get("/global")
+async def get_global_news(
+    sources: str = Query(
+        default="all",
+        description="RSS 소스 (all, yahoo_finance, marketwatch, reuters_business, cnbc, investing)"
+    ),
+    limit: int = Query(default=30, ge=1, le=100)
+) -> List[Dict[str, Any]]:
+    """글로벌 금융 뉴스 조회 (RSS 피드)"""
+    rss_service = get_rss_news_service()
+    
+    # 소스 파싱
+    if sources == "all":
+        source_list = None  # 모든 소스
+    else:
+        source_list = [s.strip() for s in sources.split(",")]
+    
+    news = rss_service.fetch_news(sources=source_list, limit=limit)
+    return news
+
+
+@router.get("/search")
+async def search_news(
+    q: str = Query(..., description="검색 키워드"),
+    sources: str = Query(
+        default="all",
+        description="검색할 RSS 소스"
+    ),
+    limit: int = Query(default=20, ge=1, le=50)
+) -> List[Dict[str, Any]]:
+    """뉴스 검색"""
+    rss_service = get_rss_news_service()
+    
+    # 소스 파싱
+    if sources == "all":
+        source_list = None
+    else:
+        source_list = [s.strip() for s in sources.split(",")]
+    
+    news = rss_service.search_news(keyword=q, sources=source_list, limit=limit)
+    return news

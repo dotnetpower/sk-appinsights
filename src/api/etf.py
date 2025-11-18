@@ -1,10 +1,12 @@
 """
 API 라우터 - ETF 관련 엔드포인트
 """
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List
+
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Dict, Any
-from datetime import datetime, timedelta
-from ..services import get_finnhub_client, get_cosmos_service
+
+from ..services import get_cosmos_service, get_yfinance_client
 
 router = APIRouter(prefix="/api/etf", tags=["ETF"])
 
@@ -21,12 +23,12 @@ async def list_etfs(
 @router.get("/{symbol}")
 async def get_etf_detail(symbol: str) -> Dict[str, Any]:
     """ETF 상세 정보 조회"""
-    finnhub = get_finnhub_client()
+    yfinance = get_yfinance_client()
     
     # ETF 프로필 및 시세 정보
-    profile = finnhub.get_etf_profile(symbol.upper())
-    quote = finnhub.get_quote(symbol.upper())
-    holdings = finnhub.get_etf_holdings(symbol.upper())
+    profile = yfinance.get_etf_profile(symbol.upper())
+    quote = yfinance.get_quote(symbol.upper())
+    holdings = yfinance.get_etf_holdings(symbol.upper())
     
     if not profile and not quote:
         raise HTTPException(status_code=404, detail=f"ETF {symbol} not found")
@@ -37,7 +39,7 @@ async def get_etf_detail(symbol: str) -> Dict[str, Any]:
         "profile": profile,
         "quote": quote,
         "holdings": holdings,
-        "updated_at": datetime.utcnow().isoformat()
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     cosmos.save_etf_data(symbol.upper(), etf_data)
     
@@ -52,8 +54,8 @@ async def get_etf_detail(symbol: str) -> Dict[str, Any]:
 @router.get("/{symbol}/holdings")
 async def get_etf_holdings(symbol: str) -> Dict[str, Any]:
     """ETF 보유 종목 조회"""
-    finnhub = get_finnhub_client()
-    holdings = finnhub.get_etf_holdings(symbol.upper())
+    yfinance = get_yfinance_client()
+    holdings = yfinance.get_etf_holdings(symbol.upper())
     
     if not holdings:
         raise HTTPException(
@@ -67,18 +69,18 @@ async def get_etf_holdings(symbol: str) -> Dict[str, Any]:
 @router.post("/{symbol}/refresh")
 async def refresh_etf_data(symbol: str) -> Dict[str, Any]:
     """ETF 데이터 새로고침 및 저장"""
-    finnhub = get_finnhub_client()
+    yfinance = get_yfinance_client()
     cosmos = get_cosmos_service()
     
-    profile = finnhub.get_etf_profile(symbol.upper())
-    quote = finnhub.get_quote(symbol.upper())
-    holdings = finnhub.get_etf_holdings(symbol.upper())
+    profile = yfinance.get_etf_profile(symbol.upper())
+    quote = yfinance.get_quote(symbol.upper())
+    holdings = yfinance.get_etf_holdings(symbol.upper())
     
     etf_data = {
         "profile": profile,
         "quote": quote,
         "holdings": holdings,
-        "updated_at": datetime.utcnow().isoformat()
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     success = cosmos.save_etf_data(symbol.upper(), etf_data)
@@ -89,4 +91,23 @@ async def refresh_etf_data(symbol: str) -> Dict[str, Any]:
     return {
         "message": f"ETF {symbol} data refreshed successfully",
         "data": etf_data
+    }
+
+
+@router.delete("/{symbol}")
+async def delete_etf(symbol: str) -> Dict[str, Any]:
+    """ETF 데이터 삭제"""
+    cosmos = get_cosmos_service()
+    
+    success = cosmos.delete_etf_data(symbol.upper())
+    
+    if not success:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"ETF {symbol} not found or failed to delete"
+        )
+    
+    return {
+        "message": f"ETF {symbol} deleted successfully",
+        "symbol": symbol.upper()
     }

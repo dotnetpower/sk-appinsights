@@ -1,9 +1,11 @@
 """
 Semantic Kernel 에이전트 플러그인
 """
-from semantic_kernel.functions import kernel_function
 from typing import Annotated
-from ..services import get_finnhub_client, get_cosmos_service
+
+from semantic_kernel.functions import kernel_function
+
+from ..services import get_cosmos_service, get_yfinance_client
 
 
 class StockAnalysisPlugin:
@@ -18,8 +20,8 @@ class StockAnalysisPlugin:
         symbol: Annotated[str, "주식 심볼 (예: AAPL, MSFT)"]
     ) -> str:
         """주식 시세 조회"""
-        finnhub = get_finnhub_client()
-        quote = finnhub.get_quote(symbol.upper())
+        yfinance = get_yfinance_client()
+        quote = yfinance.get_quote(symbol.upper())
         
         if not quote:
             return f"{symbol} 주식 정보를 찾을 수 없습니다."
@@ -47,8 +49,8 @@ class StockAnalysisPlugin:
         symbol: Annotated[str, "주식 심볼 (예: AAPL, MSFT)"]
     ) -> str:
         """기업 정보 조회"""
-        finnhub = get_finnhub_client()
-        profile = finnhub.get_company_profile(symbol.upper())
+        yfinance = get_yfinance_client()
+        profile = yfinance.get_company_profile(symbol.upper())
         
         if not profile:
             return f"{symbol} 기업 정보를 찾을 수 없습니다."
@@ -79,14 +81,14 @@ class StockAnalysisPlugin:
         symbol: Annotated[str, "ETF 심볼 (예: SPY, QQQ)"]
     ) -> str:
         """ETF 정보 조회"""
-        finnhub = get_finnhub_client()
-        profile = finnhub.get_etf_profile(symbol.upper())
+        yfinance = get_yfinance_client()
+        profile = yfinance.get_etf_profile(symbol.upper())
         
         if not profile:
             return f"{symbol} ETF 정보를 찾을 수 없습니다."
         
-        name = profile.get('profile', {}).get('name', 'N/A')
-        description = profile.get('profile', {}).get('description', 'N/A')
+        name = profile.get('name', 'N/A')
+        description = profile.get('description', 'N/A')
         
         return f"""
 {symbol} ETF 정보:
@@ -103,8 +105,8 @@ class StockAnalysisPlugin:
         query: Annotated[str, "검색할 회사명 또는 심볼"]
     ) -> str:
         """주식 검색"""
-        finnhub = get_finnhub_client()
-        results = finnhub.search_symbol(query)
+        yfinance = get_yfinance_client()
+        results = yfinance.search_symbol(query)
         
         if not results or 'result' not in results:
             return f"'{query}'에 대한 검색 결과가 없습니다."

@@ -1,0 +1,389 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📊 ETF Agent - 연결된 서비스 모니터링\n\n---\n\n이 대시보드는 ETF Agent 애플리케이션과 연결된 모든 서비스의 상태를 실시간으로 모니터링합니다."
+      },
+      "name": "text - 0"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "1f74ed9a-e3ed-498d-8f88-122db7b479e1",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "시간 범위",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 3600000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                }
+              ],
+              "allowCustom": true
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "parameters - 1"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 📊 연결된 서비스 목록\n"
+      },
+      "name": "text - 2",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "union dependencies, requests\n| where timestamp {TimeRange}\n| extend ServiceName = coalesce(\n    tostring(customDimensions.['ai.cloud.role']),\n    tostring(cloud_RoleName),\n    iff(itemType == 'dependency', tostring(target), 'API Server')\n)\n| extend ServiceType = case(\n    tostring(type) contains 'Cosmos' or tostring(target) contains 'cosmos', '🗄️ Cosmos DB',\n    tostring(type) contains 'HTTP' or tostring(type) contains 'Ajax', '🌐 External API',\n    tostring(type) contains 'SQL', '💾 SQL Database',\n    itemType == 'request', '⚙️ API Server',\n    strcat('📦 ', tostring(type))\n)\n| summarize \n    TotalCalls = count(),\n    SuccessRate = round(100.0 * countif(success == true) / count(), 2),\n    AvgDuration = round(avg(duration), 2),\n    P95Duration = round(percentile(duration, 95), 2),\n    MaxDuration = round(max(duration), 2),\n    FailedCalls = countif(success == false)\n    by ServiceName, ServiceType\n| extend Status = iff(SuccessRate >= 99, '✅ 정상', iff(SuccessRate >= 95, '⚠️ 주의', '❌ 오류'))\n| project \n    Status,\n    ServiceType,\n    ServiceName,\n    TotalCalls,\n    ['성공률 (%)'] = SuccessRate,\n    ['평균 응답시간 (ms)'] = AvgDuration,\n    ['P95 응답시간 (ms)'] = P95Duration,\n    ['최대 응답시간 (ms)'] = MaxDuration,\n    ['실패 건수'] = FailedCalls\n| order by TotalCalls desc",
+        "size": 0,
+        "title": "서비스별 호출 통계",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Status",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "contains",
+                    "thresholdValue": "정상",
+                    "representation": "success",
+                    "text": ""
+                  },
+                  {
+                    "operator": "contains",
+                    "thresholdValue": "주의",
+                    "representation": "warning",
+                    "text": ""
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "error",
+                    "text": ""
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "성공률 (%)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "greenRed"
+              }
+            },
+            {
+              "columnMatch": "평균 응답시간 (ms)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - 3",
+      "styleSettings": {
+        "margin": "10px",
+        "padding": "0px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 🗄️ Cosmos DB 상세 모니터링\n"
+      },
+      "name": "text - 4",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "dependencies\n| where timestamp {TimeRange}\n| where tostring(type) contains 'Cosmos' or tostring(target) contains 'cosmos'\n| extend Operation = tostring(customDimensions.['db.operation'])\n| summarize \n    Calls = count(),\n    SuccessRate = round(100.0 * countif(success == true) / count(), 2),\n    AvgDuration = round(avg(duration), 2),\n    P95Duration = round(percentile(duration, 95), 2)\n    by Operation, target\n| extend OperationType = iff(isempty(Operation), 'Unknown', Operation)\n| project \n    ['Cosmos DB 엔드포인트'] = target,\n    ['작업 유형'] = OperationType,\n    ['호출 수'] = Calls,\n    ['성공률 (%)'] = SuccessRate,\n    ['평균 시간 (ms)'] = AvgDuration,\n    ['P95 시간 (ms)'] = P95Duration\n| order by ['호출 수'] desc",
+        "size": 0,
+        "title": "Cosmos DB 작업별 통계",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "query - 5",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "dependencies\n| where timestamp {TimeRange}\n| where tostring(type) contains 'Cosmos' or tostring(target) contains 'cosmos'\n| summarize \n    Calls = count(),\n    AvgDuration = avg(duration)\n    by bin(timestamp, 5m)\n| render timechart with (title=\"Cosmos DB 호출 추이\", xtitle=\"시간\", ytitle=\"호출 수 / 평균 응답시간(ms)\")",
+        "size": 0,
+        "title": "Cosmos DB 시간별 호출 추이",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "query - 6",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 🌐 외부 API 호출 모니터링\n"
+      },
+      "name": "text - 7",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "dependencies\n| where timestamp {TimeRange}\n| where tostring(type) contains 'HTTP' or tostring(type) contains 'Ajax'\n| extend ApiHost = tostring(split(tostring(target), '/')[0])\n| summarize \n    Calls = count(),\n    SuccessRate = round(100.0 * countif(success == true) / count(), 2),\n    AvgDuration = round(avg(duration), 2),\n    Failures = countif(success == false)\n    by ApiHost, type\n| project \n    ['API 호스트'] = ApiHost,\n    ['타입'] = type,\n    ['호출 수'] = Calls,\n    ['성공률 (%)'] = SuccessRate,\n    ['평균 시간 (ms)'] = AvgDuration,\n    ['실패 수'] = Failures\n| order by ['호출 수'] desc",
+        "size": 0,
+        "title": "외부 API 호출 통계 (yfinance 등)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "query - 8",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## ⚙️ API 엔드포인트 성능\n"
+      },
+      "name": "text - 9",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp {TimeRange}\n| extend Endpoint = strcat(tostring(customDimensions.['http.method']), ' ', tostring(url))\n| summarize \n    Calls = count(),\n    SuccessRate = round(100.0 * countif(success == true) / count(), 2),\n    AvgDuration = round(avg(duration), 2),\n    P95Duration = round(percentile(duration, 95), 2),\n    Failures = countif(success == false)\n    by name, resultCode\n| project \n    ['엔드포인트'] = name,\n    ['상태 코드'] = resultCode,\n    ['호출 수'] = Calls,\n    ['성공률 (%)'] = SuccessRate,\n    ['평균 시간 (ms)'] = AvgDuration,\n    ['P95 시간 (ms)'] = P95Duration,\n    ['실패 수'] = Failures\n| order by ['호출 수'] desc",
+        "size": 0,
+        "title": "API 엔드포인트별 성능",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "query - 10",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## ❌ 오류 및 예외\n"
+      },
+      "name": "text - 11",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "union \n    (exceptions | extend itemKind = 'exception'),\n    (traces | where severityLevel >= 2 | extend itemKind = 'trace'),\n    (requests | where success == false | extend itemKind = 'failed_request'),\n    (dependencies | where success == false | extend itemKind = 'failed_dependency')\n| where timestamp {TimeRange}\n| extend \n    ErrorType = case(\n        itemKind == 'exception', strcat('❌ Exception: ', tostring(type)),\n        itemKind == 'trace', strcat('⚠️ Trace (Level ', tostring(severityLevel), ')'),\n        itemKind == 'failed_request', strcat('🔴 Failed Request (', tostring(resultCode), ')'),\n        itemKind == 'failed_dependency', strcat('🔴 Failed Dependency: ', tostring(type)),\n        'Other'\n    ),\n    ErrorMessage = case(\n        itemKind == 'exception', tostring(outerMessage),\n        itemKind == 'trace', tostring(message),\n        itemKind == 'failed_request', strcat(tostring(name), ' - ', tostring(url)),\n        itemKind == 'failed_dependency', strcat(tostring(name), ' -> ', tostring(target)),\n        'Unknown'\n    )\n| summarize \n    Count = count(),\n    LatestOccurrence = max(timestamp),\n    FirstOccurrence = min(timestamp)\n    by ErrorType, ErrorMessage\n| project \n    ['오류 타입'] = ErrorType,\n    ['메시지 요약'] = substring(ErrorMessage, 0, 80),\n    ['발생 횟수'] = Count,\n    ['최근 발생'] = LatestOccurrence,\n    ['최초 발생'] = FirstOccurrence,\n    FullMessage = ErrorMessage\n| order by ['발생 횟수'] desc\n| take 20",
+        "size": 0,
+        "title": "최근 오류 및 예외 (Top 20) - 행 클릭하여 상세 확인",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "오류 타입",
+              "formatter": 1
+            },
+            {
+              "columnMatch": "발생 횟수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "redBright"
+              }
+            },
+            {
+              "columnMatch": "FullMessage",
+              "formatter": 5
+            }
+          ],
+          "rowLimit": 20,
+          "labelSettings": [
+            {
+              "columnId": "메시지 요약",
+              "label": "메시지 (클릭하여 전체 보기)"
+            }
+          ],
+          "hierarchySettings": {
+            "treeType": 1
+          }
+        },
+        "sortBy": [],
+        "exportFieldName": "오류 타입",
+        "exportParameterName": "SelectedErrorType",
+        "exportToExcelOptions": "visible",
+        "showExportToExcel": true,
+        "tileSettings": {
+          "showBorder": false
+        }
+      },
+      "name": "query - 12",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "error-selection",
+            "version": "KqlParameterItem/1.0",
+            "name": "SelectedErrorType",
+            "label": "📌 오류 선택 (상세 로그 확인)",
+            "type": 2,
+            "query": "union \n    (exceptions | extend itemKind = 'exception'),\n    (traces | where severityLevel >= 2 | extend itemKind = 'trace'),\n    (requests | where success == false | extend itemKind = 'failed_request'),\n    (dependencies | where success == false | extend itemKind = 'failed_dependency')\n| where timestamp {TimeRange}\n| extend \n    ErrorType = case(\n        itemKind == 'exception', strcat('❌ Exception: ', tostring(type)),\n        itemKind == 'trace', strcat('⚠️ Trace (Level ', tostring(severityLevel), ')'),\n        itemKind == 'failed_request', strcat('🔴 Failed Request (', tostring(resultCode), ')'),\n        itemKind == 'failed_dependency', strcat('🔴 Failed Dependency: ', tostring(type)),\n        'Other'\n    )\n| summarize Count = count() by ErrorType\n| order by Count desc\n| project value = ErrorType, label = strcat(ErrorType, ' (', Count, '건)')",
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 0
+            },
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "parameters - 13"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n### 📋 선택한 오류의 상세 로그 (최근 10건)\n"
+      },
+      "conditionalVisibility": {
+        "parameterName": "SelectedErrorType",
+        "comparison": "isNotEqualTo"
+      },
+      "name": "text - 14"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let selectedError = '{SelectedErrorType}';\nunion \n    (exceptions \n     | extend itemKind = 'exception',\n              ErrorType = strcat('❌ Exception: ', tostring(type)),\n              ErrorMessage = tostring(outerMessage),\n              DetailJson = pack('Method', method, 'Assembly', assembly, 'OuterType', outerType, 'InnerMessage', innermostMessage)\n    ),\n    (traces \n     | where severityLevel >= 2\n     | extend itemKind = 'trace',\n              ErrorType = strcat('⚠️ Trace (Level ', tostring(severityLevel), ')'),\n              ErrorMessage = tostring(message),\n              DetailJson = pack('Severity', severityLevel, 'Level', case(severityLevel == 0, 'Verbose', severityLevel == 1, 'Info', severityLevel == 2, 'Warning', severityLevel == 3, 'Error', severityLevel == 4, 'Critical', 'Unknown'))\n    ),\n    (requests \n     | where success == false\n     | extend itemKind = 'failed_request',\n              ErrorType = strcat('🔴 Failed Request (', tostring(resultCode), ')'),\n              ErrorMessage = strcat(tostring(name), ' - ', tostring(url)),\n              DetailJson = pack('Method', customDimensions.['http.method'], 'URL', url, 'ResultCode', resultCode, 'Duration_ms', duration)\n    ),\n    (dependencies \n     | where success == false\n     | extend itemKind = 'failed_dependency',\n              ErrorType = strcat('🔴 Failed Dependency: ', tostring(type)),\n              ErrorMessage = strcat(tostring(name), ' -> ', tostring(target)),\n              DetailJson = pack('Type', type, 'Target', target, 'ResultCode', resultCode, 'Duration_ms', duration)\n    )\n| where timestamp {TimeRange}\n| where isnotempty(selectedError) and ErrorType == selectedError\n| project \n    ['발생 시각'] = format_datetime(timestamp, 'yyyy-MM-dd HH:mm:ss'),\n    ['오류 타입'] = ErrorType,\n    ['전체 메시지'] = ErrorMessage,\n    ['상세 정보'] = DetailJson,\n    ['Operation ID'] = operation_Id\n| order by ['발생 시각'] desc\n| take 10",
+        "size": 0,
+        "title": "오류 발생 내역",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "전체 메시지",
+              "formatter": 1,
+              "formatOptions": {
+                "customColumnWidthSetting": "40%"
+              }
+            },
+            {
+              "columnMatch": "상세 정보",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "CellDetails",
+                "linkLabel": "📄 상세 보기"
+              }
+            },
+            {
+              "columnMatch": "Operation ID",
+              "formatter": 5
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "SelectedErrorType",
+        "comparison": "isNotEqualTo"
+      },
+      "name": "query - 15",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/YOUR_SUBSCRIPTION_ID/resourceGroups/YOUR_RESOURCE_GROUP/providers/microsoft.insights/components/YOUR_APP_INSIGHTS_NAME"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

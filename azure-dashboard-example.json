@@ -1,0 +1,175 @@
+{
+  "properties": {
+    "lenses": {
+      "0": {
+        "order": 0,
+        "parts": {
+          "0": {
+            "position": {
+              "x": 0,
+              "y": 0,
+              "colSpan": 6,
+              "rowSpan": 4
+            },
+            "metadata": {
+              "inputs": [
+                {
+                  "name": "ComponentId",
+                  "value": {
+                    "SubscriptionId": "YOUR_SUBSCRIPTION_ID",
+                    "ResourceGroup": "YOUR_RESOURCE_GROUP",
+                    "Name": "YOUR_APP_INSIGHTS_NAME"
+                  }
+                },
+                {
+                  "name": "Query",
+                  "value": "requests\n| where timestamp > ago(1h)\n| summarize RequestCount = count() by cloud_RoleName\n| order by RequestCount desc"
+                },
+                {
+                  "name": "TimeRange",
+                  "value": "PT1H"
+                },
+                {
+                  "name": "Version",
+                  "value": "1.0"
+                }
+              ],
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsGridPart",
+              "settings": {
+                "content": {
+                  "Query": "requests\n| where timestamp > ago(1h)\n| summarize RequestCount = count() by cloud_RoleName\n| order by RequestCount desc\n",
+                  "ControlType": "AnalyticsGrid",
+                  "SpecificChart": "StackedColumn"
+                }
+              },
+              "asset": {
+                "idInputName": "ComponentId",
+                "type": "ApplicationInsights"
+              }
+            }
+          },
+          "1": {
+            "position": {
+              "x": 6,
+              "y": 0,
+              "colSpan": 6,
+              "rowSpan": 4
+            },
+            "metadata": {
+              "inputs": [
+                {
+                  "name": "ComponentId",
+                  "value": {
+                    "SubscriptionId": "YOUR_SUBSCRIPTION_ID",
+                    "ResourceGroup": "YOUR_RESOURCE_GROUP",
+                    "Name": "YOUR_APP_INSIGHTS_NAME"
+                  }
+                },
+                {
+                  "name": "Query",
+                  "value": "dependencies\n| where timestamp > ago(1h)\n| summarize DependencyCount = count() by target, type\n| order by DependencyCount desc"
+                }
+              ],
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsGridPart",
+              "settings": {}
+            }
+          },
+          "2": {
+            "position": {
+              "x": 0,
+              "y": 4,
+              "colSpan": 12,
+              "rowSpan": 4
+            },
+            "metadata": {
+              "inputs": [
+                {
+                  "name": "ComponentId",
+                  "value": {
+                    "SubscriptionId": "YOUR_SUBSCRIPTION_ID",
+                    "ResourceGroup": "YOUR_RESOURCE_GROUP",
+                    "Name": "YOUR_APP_INSIGHTS_NAME"
+                  }
+                },
+                {
+                  "name": "Query",
+                  "value": "dependencies\n| where timestamp > ago(24h)\n| where type == 'Azure blob' or type == 'SQL' or type contains 'Cosmos' or type contains 'HTTP'\n| summarize \n    TotalCalls = count(),\n    AvgDuration = avg(duration),\n    SuccessRate = 100.0 * countif(success == true) / count()\n    by target, type\n| order by TotalCalls desc"
+                }
+              ],
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsGridPart"
+            }
+          },
+          "3": {
+            "position": {
+              "x": 0,
+              "y": 8,
+              "colSpan": 6,
+              "rowSpan": 4
+            },
+            "metadata": {
+              "inputs": [
+                {
+                  "name": "ComponentId",
+                  "value": {
+                    "SubscriptionId": "YOUR_SUBSCRIPTION_ID",
+                    "ResourceGroup": "YOUR_RESOURCE_GROUP",
+                    "Name": "YOUR_APP_INSIGHTS_NAME"
+                  }
+                },
+                {
+                  "name": "Query",
+                  "value": "dependencies\n| where timestamp > ago(1h)\n| where type contains 'Cosmos'\n| summarize \n    Calls = count(),\n    AvgDuration = avg(duration),\n    P95Duration = percentile(duration, 95)\n    by bin(timestamp, 5m)\n| render timechart"
+                }
+              ],
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsLineChartPart"
+            }
+          },
+          "4": {
+            "position": {
+              "x": 6,
+              "y": 8,
+              "colSpan": 6,
+              "rowSpan": 4
+            },
+            "metadata": {
+              "inputs": [
+                {
+                  "name": "ComponentId",
+                  "value": {
+                    "SubscriptionId": "YOUR_SUBSCRIPTION_ID",
+                    "ResourceGroup": "YOUR_RESOURCE_GROUP",
+                    "Name": "YOUR_APP_INSIGHTS_NAME"
+                  }
+                },
+                {
+                  "name": "Query",
+                  "value": "requests\n| where timestamp > ago(1h)\n| summarize \n    Requests = count(),\n    AvgDuration = avg(duration),\n    FailedRequests = countif(success == false)\n    by bin(timestamp, 5m)\n| render timechart"
+                }
+              ],
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsLineChartPart"
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "model": {
+        "timeRange": {
+          "value": {
+            "relative": {
+              "duration": 24,
+              "timeUnit": 1
+            }
+          },
+          "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+        }
+      }
+    }
+  },
+  "name": "ETF Agent - Services Dashboard",
+  "type": "Microsoft.Portal/dashboards",
+  "location": "eastus",
+  "tags": {
+    "hidden-title": "ETF Agent - Services Dashboard"
+  }
+}

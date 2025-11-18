@@ -12,4 +12,6 @@ warning: The `tool.uv.dev-dependencies` field (used in `pyproject.toml`) is depr
 
 
 알아서 멋지게 UI 부터 기능까지 구현해봐
+
+디버깅용 launch.json 생성해
 ```
