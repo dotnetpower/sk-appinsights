@@ -96,6 +96,7 @@ class AgentService:
         
         return str(response)
     
+    @trace_span()
     async def chat_stream(self, user_message: str) -> AsyncGenerator[str, None]:
         """사용자 메시지 처리 (스트리밍)"""
         # 사용자 메시지 추가
