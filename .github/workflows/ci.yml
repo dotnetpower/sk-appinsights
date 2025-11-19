@@ -1,0 +1,89 @@
+name: CI - Build and Test
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔄 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: 📦 Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: 📥 Install dependencies
+      run: |
+        uv sync
+    
+    - name: 🧹 Lint with ruff
+      run: |
+        uv run ruff check src/
+      continue-on-error: true
+    
+    - name: 🎨 Check formatting with black
+      run: |
+        uv run black --check src/
+      continue-on-error: true
+    
+    - name: 🧪 Run tests
+      run: |
+        uv run pytest -v
+      continue-on-error: true
+  
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔄 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🏗️ Build Docker image
+      run: |
+        docker build -t etf-agent:test .
+    
+    - name: 🧪 Test Docker image
+      run: |
+        # 컨테이너 실행
+        docker run -d --name test-container -p 8000:8000 \
+          -e APPLICATIONINSIGHTS_CONNECTION_STRING="InstrumentationKey=test" \
+          -e COSMOS_ENDPOINT="https://test.documents.azure.com:443/" \
+          -e COSMOS_KEY="test-key" \
+          -e COSMOS_DATABASE_NAME="test-db" \
+          -e COSMOS_CONTAINER_NAME="test-container" \
+          -e OPENAI_API_KEY="sk-test" \
+          etf-agent:test
+        
+        # Health check 대기
+        sleep 10
+        
+        # Health check 테스트
+        for i in {1..30}; do
+          if curl -f http://localhost:8000/health; then
+            echo "✅ Health check 성공!"
+            docker logs test-container
+            docker stop test-container
+            exit 0
+          fi
+          echo "⏳ Health check 대기 중... ($i/30)"
+          sleep 2
+        done
+        
+        echo "❌ Health check 실패"
+        docker logs test-container
+        docker stop test-container
+        exit 1

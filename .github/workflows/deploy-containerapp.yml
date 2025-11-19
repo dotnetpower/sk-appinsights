@@ -1,0 +1,125 @@
+name: Deploy to Azure Container App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # 수동 실행 가능
+
+env:
+  CONTAINER_REGISTRY_NAME: crskappinsights
+  RESOURCE_GROUP: rg-sk-appinsights
+  CONTAINER_APP_NAME: etf-agent-app
+  IMAGE_NAME: etf-agent
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔄 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔐 Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: 🐳 Login to Azure Container Registry
+      run: |
+        az acr login --name ${{ env.CONTAINER_REGISTRY_NAME }}
+    
+    - name: 🏗️ Build Docker image
+      run: |
+        docker build -t ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+                     -t ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest \
+                     .
+    
+    - name: 📤 Push Docker image
+      run: |
+        docker push ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+    
+    - name: 🚀 Deploy to Azure Container App
+      run: |
+        # Container App이 존재하는지 확인
+        if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} &>/dev/null; then
+          echo "✅ Container App 업데이트 중..."
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        else
+          echo "📦 새로운 Container App 생성 중..."
+          
+          # ACR 자격증명 가져오기
+          ACR_USERNAME=$(az acr credential show --name ${{ env.CONTAINER_REGISTRY_NAME }} --query username -o tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.CONTAINER_REGISTRY_NAME }} --query passwords[0].value -o tsv)
+          
+          # Container App Environment 생성 (없는 경우)
+          if ! az containerapp env show --name etf-agent-env --resource-group ${{ env.RESOURCE_GROUP }} &>/dev/null; then
+            az containerapp env create \
+              --name etf-agent-env \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --location koreacentral
+          fi
+          
+          # Container App 생성
+          az containerapp create \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --environment etf-agent-env \
+            --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --registry-server "${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io" \
+            --registry-username $ACR_USERNAME \
+            --registry-password $ACR_PASSWORD \
+            --target-port 8000 \
+            --ingress external \
+            --min-replicas 1 \
+            --max-replicas 3 \
+            --cpu 0.5 \
+            --memory 1Gi \
+            --secrets \
+              appinsights-connection-string="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
+              cosmos-endpoint="${{ secrets.COSMOS_ENDPOINT }}" \
+              cosmos-key="${{ secrets.COSMOS_KEY }}" \
+              cosmos-database-name="${{ secrets.COSMOS_DATABASE_NAME }}" \
+              cosmos-container-name="${{ secrets.COSMOS_CONTAINER_NAME }}" \
+              openai-api-key="${{ secrets.OPENAI_API_KEY }}" \
+              alphavantage-api-key="${{ secrets.ALPHA_VANTAGE_API_KEY }}" \
+              finnhub-api-key="${{ secrets.FINNHUB_API_KEY }}" \
+            --env-vars \
+              "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string" \
+              "COSMOS_ENDPOINT=secretref:cosmos-endpoint" \
+              "COSMOS_KEY=secretref:cosmos-key" \
+              "COSMOS_DATABASE_NAME=secretref:cosmos-database-name" \
+              "COSMOS_CONTAINER_NAME=secretref:cosmos-container-name" \
+              "OPENAI_API_KEY=secretref:openai-api-key" \
+              "OPENAI_MODEL=gpt-4" \
+              "ALPHA_VANTAGE_API_KEY=secretref:alphavantage-api-key" \
+              "FINNHUB_API_KEY=secretref:finnhub-api-key" \
+              "LOG_LEVEL=INFO"
+        fi
+    
+    - name: 🎉 Get App URL
+      run: |
+        APP_URL=$(az containerapp show \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query properties.configuration.ingress.fqdn -o tsv)
+        
+        echo "=========================================="
+        echo "🚀 배포 완료!"
+        echo "=========================================="
+        echo "📍 App URL: https://$APP_URL"
+        echo "📍 Health: https://$APP_URL/health"
+        echo "📍 API Docs: https://$APP_URL/docs"
+        echo "=========================================="
+        
+        # GitHub Step Summary에 추가
+        echo "## 🎉 배포 성공!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- 🌐 **App URL**: https://$APP_URL" >> $GITHUB_STEP_SUMMARY
+        echo "- 💚 **Health Check**: https://$APP_URL/health" >> $GITHUB_STEP_SUMMARY
+        echo "- 📚 **API Docs**: https://$APP_URL/docs" >> $GITHUB_STEP_SUMMARY
+        echo "- 🏷️ **Image Tag**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

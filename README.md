@@ -1,5 +1,8 @@
 # ETF Agent
 
+[![Deploy to Azure Container App](https://github.com/dotnetpower/sk-appinsights/actions/workflows/deploy-containerapp.yml/badge.svg)](https://github.com/dotnetpower/sk-appinsights/actions/workflows/deploy-containerapp.yml)
+[![CI](https://github.com/dotnetpower/sk-appinsights/actions/workflows/ci.yml/badge.svg)](https://github.com/dotnetpower/sk-appinsights/actions/workflows/ci.yml)
+
 ETF 및 주식 종목 데이터 분석 에이전트 프로젝트, 주식 데이터는 실제 데이터이지만 Application Insights 의 모니터링 기능 시연을 위한 예제입니다.
 
 ## 프로젝트 구조
@@ -664,6 +667,159 @@ Application Insights 모니터링 및 분석을 위한 심화 가이드:
 - **[사용자 행동 분석 가이드](./USER_BEHAVIOR_ANALYTICS.md)** - 코호트 분석, 전환 깔때기, 사용자 세그먼트 분석
 - **[Live Metrics 가이드](./LIVE_METRICS_GUIDE.md)** - 실시간 모니터링 설정, 사용자 정의 메트릭, 트러블슈팅
 - **[대시보드 설정 가이드](./DASHBOARD_SETUP.md)** - Azure Portal 대시보드 및 Workbook 구성, KQL 쿼리 모음
+
+---
+
+## 🐳 Docker 및 Azure Container App 배포
+
+### 환경변수 설정
+
+`.env` 파일에 Container Registry 정보가 설정되어 있는지 확인:
+
+```bash
+# .env 파일 확인
+cat .env | grep -E "CONTAINER_REGISTRY_NAME|RESOURCE_GROUP|LOCATION"
+
+# 예상 출력:
+# CONTAINER_REGISTRY_NAME=crskappinsights
+# RESOURCE_GROUP=rg-sk-appinsights
+# LOCATION=koreacentral
+```
+
+### 로컬 Docker 테스트
+
+```bash
+# Docker 이미지 빌드 및 테스트 (자동화 스크립트)
+./test-docker.sh
+
+# 또는 수동으로
+docker build -t etf-agent:local .
+docker run -d --name etf-agent-test --env-file .env -p 8000:8000 etf-agent:local
+
+# 로그 확인
+docker logs -f etf-agent-test
+
+# 중지 및 제거
+docker stop etf-agent-test
+docker rm etf-agent-test
+```
+
+### Docker Compose 실행
+
+```bash
+# 모든 서비스 시작
+docker-compose up -d
+
+# 로그 확인
+docker-compose logs -f
+
+# 중지
+docker-compose down
+```
+
+### Azure Container App 배포
+
+**자동 배포 (추천)**:
+
+```bash
+# 배포 스크립트 실행
+./deploy-containerapp.sh
+
+# 환경 변수 시크릿 설정
+source .env
+az containerapp secret set \
+  --name etf-agent-app \
+  --resource-group etf-agent-rg \
+  --secrets \
+    appinsights-connection-string="$APPLICATIONINSIGHTS_CONNECTION_STRING" \
+    cosmos-endpoint="$COSMOS_ENDPOINT" \
+    cosmos-key="$COSMOS_KEY" \
+    cosmos-database-name="$COSMOS_DATABASE_NAME" \
+    cosmos-container-name="$COSMOS_CONTAINER_NAME" \
+    openai-api-key="$OPENAI_API_KEY" \
+    alphavantage-api-key="$ALPHA_VANTAGE_API_KEY" \
+    finnhub-api-key="$FINNHUB_API_KEY"
+```
+
+**상세 가이드**: [Container App 배포 가이드](./CONTAINER_APP_DEPLOYMENT.md)
+
+---
+
+## 🔄 GitHub Actions CI/CD
+
+### 자동 배포 설정
+
+코드를 main 브랜치에 푸시하면 자동으로 빌드 및 배포됩니다.
+
+#### 1. GitHub Secrets 설정
+
+Repository → Settings → Secrets and variables → Actions
+
+**필수 Secrets**:
+- `AZURE_CREDENTIALS` - Azure 서비스 주체 인증 정보
+- `APPLICATIONINSIGHTS_CONNECTION_STRING`
+- `COSMOS_ENDPOINT`, `COSMOS_KEY`, `COSMOS_DATABASE_NAME`, `COSMOS_CONTAINER_NAME`
+- `OPENAI_API_KEY`
+- `ALPHA_VANTAGE_API_KEY`, `FINNHUB_API_KEY` (선택)
+
+#### 2. Azure 서비스 주체 생성
+
+```bash
+# Service Principal 생성 및 JSON 출력
+az ad sp create-for-rbac \
+  --name "github-actions-etf-agent" \
+  --role contributor \
+  --scopes /subscriptions/{SUBSCRIPTION_ID}/resourceGroups/rg-sk-appinsights \
+  --sdk-auth
+
+# 출력된 전체 JSON을 AZURE_CREDENTIALS Secret에 저장
+```
+
+#### 3. 자동 배포
+
+```bash
+# main 브랜치에 푸시하면 자동 배포
+git add .
+git commit -m "feat: 새로운 기능 추가"
+git push origin main
+
+# GitHub Actions에서 자동 실행:
+# 1. Docker 이미지 빌드
+# 2. Azure Container Registry 푸시
+# 3. Container App 배포
+```
+
+#### 4. 수동 배포
+
+GitHub Repository → Actions → "Deploy to Azure Container App" → Run workflow
+
+**상세 가이드**: [GitHub Actions 설정 가이드](./GITHUB_ACTIONS_SETUP.md)
+
+### 워크플로우
+
+- **CI** (`ci.yml`): Pull Request 시 린트, 테스트, Docker 빌드
+- **CD** (`deploy-containerapp.yml`): main 브랜치 푸시 시 자동 배포
+
+---
+
+### 배포된 앱 확인
+
+```bash
+# App URL 가져오기
+APP_URL=$(az containerapp show \
+  --name etf-agent-app \
+  --resource-group etf-agent-rg \
+  --query properties.configuration.ingress.fqdn -o tsv)
+
+echo "🌐 App URL: https://$APP_URL"
+echo "📊 Health: https://$APP_URL/health"
+echo "📚 API Docs: https://$APP_URL/docs"
+
+# Health check
+curl https://$APP_URL/health
+```
+
+---
 
 ## VSCode 설정
 

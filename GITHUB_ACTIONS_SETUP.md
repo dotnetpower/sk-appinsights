@@ -1,0 +1,426 @@
+# GitHub Actions CI/CD 설정 가이드
+
+이 문서는 GitHub Actions를 사용하여 Azure Container App으로 자동 배포하는 방법을 설명합니다.
+
+## 📋 워크플로우 개요
+
+### 1. **CI (Continuous Integration)** - `ci.yml`
+- **트리거**: Pull Request, non-main 브랜치 push
+- **작업**:
+  - Python 코드 린트 (ruff)
+  - 코드 포맷 검사 (black)
+  - 테스트 실행 (pytest)
+  - Docker 이미지 빌드 및 테스트
+
+### 2. **CD (Continuous Deployment)** - `deploy-containerapp.yml`
+- **트리거**: main 브랜치 push, 수동 실행
+- **작업**:
+  - Docker 이미지 빌드
+  - Azure Container Registry에 푸시
+  - Azure Container App 배포/업데이트
+
+---
+
+## 🔧 GitHub Secrets 설정
+
+### 필수 Secrets
+
+Repository → Settings → Secrets and variables → Actions → New repository secret
+
+#### 1. Azure 인증 정보
+
+**`AZURE_CREDENTIALS`** - Azure 서비스 주체 (Service Principal)
+
+```bash
+# 1. Azure CLI로 서비스 주체 생성
+az ad sp create-for-rbac \
+  --name "github-actions-etf-agent" \
+  --role contributor \
+  --scopes /subscriptions/{SUBSCRIPTION_ID}/resourceGroups/rg-sk-appinsights \
+  --sdk-auth
+
+# 2. 출력된 JSON 전체를 GitHub Secret에 저장
+# 출력 예시:
+{
+  "clientId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "subscriptionId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "tenantId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  ...
+}
+```
+
+**주의**: 전체 JSON 출력을 복사하여 `AZURE_CREDENTIALS` Secret에 저장하세요.
+
+#### 2. Application Insights
+
+**`APPLICATIONINSIGHTS_CONNECTION_STRING`**
+
+```bash
+# Azure Portal에서 확인
+# Application Insights → Overview → Connection String
+
+# 또는 Azure CLI
+az monitor app-insights component show \
+  --app {APP_INSIGHTS_NAME} \
+  --resource-group rg-sk-appinsights \
+  --query connectionString -o tsv
+```
+
+#### 3. Cosmos DB
+
+**`COSMOS_ENDPOINT`**
+```bash
+# 예: https://your-cosmos-account.documents.azure.com:443/
+```
+
+**`COSMOS_KEY`**
+```bash
+# Azure Portal → Cosmos DB → Keys → Primary Key
+```
+
+**`COSMOS_DATABASE_NAME`**
+```bash
+# 예: etf-agent
+```
+
+**`COSMOS_CONTAINER_NAME`**
+```bash
+# 예: etf-data
+```
+
+#### 4. OpenAI
+
+**`OPENAI_API_KEY`**
+```bash
+# OpenAI API 키
+```
+
+#### 5. 외부 API (선택사항)
+
+**`ALPHA_VANTAGE_API_KEY`**
+```bash
+# Alpha Vantage API 키
+```
+
+**`FINNHUB_API_KEY`**
+```bash
+# Finnhub API 키
+```
+
+---
+
+## 🚀 사용 방법
+
+### 자동 배포 (main 브랜치 push)
+
+```bash
+# 1. 코드 변경
+git add .
+git commit -m "feat: 새로운 기능 추가"
+
+# 2. main 브랜치에 push
+git push origin main
+
+# 3. GitHub Actions 자동 실행
+# https://github.com/dotnetpower/sk-appinsights/actions
+```
+
+### 수동 배포
+
+1. GitHub Repository → Actions
+2. "Deploy to Azure Container App" 워크플로우 선택
+3. "Run workflow" 버튼 클릭
+4. 브랜치 선택 (기본: main)
+5. "Run workflow" 확인
+
+### Pull Request CI 확인
+
+```bash
+# 1. 새 브랜치 생성
+git checkout -b feature/new-feature
+
+# 2. 코드 변경 및 커밋
+git add .
+git commit -m "feat: 새로운 기능"
+
+# 3. Push
+git push origin feature/new-feature
+
+# 4. GitHub에서 Pull Request 생성
+# CI 워크플로우 자동 실행 (린트, 테스트, Docker 빌드)
+```
+
+---
+
+## 📊 워크플로우 상태 확인
+
+### GitHub Actions UI
+
+```
+https://github.com/dotnetpower/sk-appinsights/actions
+```
+
+### 배포 결과 확인
+
+워크플로우 실행 후 Summary 섹션에서 다음 정보 확인:
+
+- 🌐 App URL
+- 💚 Health Check URL
+- 📚 API Docs URL
+- 🏷️ Image Tag (commit SHA)
+
+### 로그 확인
+
+```bash
+# Azure Container App 로그
+az containerapp logs show \
+  --name etf-agent-app \
+  --resource-group rg-sk-appinsights \
+  --follow
+```
+
+---
+
+## 🔍 워크플로우 파일 설명
+
+### deploy-containerapp.yml
+
+```yaml
+# 환경변수 설정
+env:
+  CONTAINER_REGISTRY_NAME: crskappinsights
+  RESOURCE_GROUP: rg-sk-appinsights
+  CONTAINER_APP_NAME: etf-agent-app
+  IMAGE_NAME: etf-agent
+
+# 주요 단계:
+# 1. 코드 체크아웃
+# 2. Azure 로그인 (Service Principal)
+# 3. Container Registry 로그인
+# 4. Docker 이미지 빌드 (commit SHA + latest 태그)
+# 5. Docker 이미지 푸시
+# 6. Container App 배포/업데이트
+# 7. 배포 결과 출력
+```
+
+### ci.yml
+
+```yaml
+# Pull Request 및 non-main 브랜치에서 실행
+
+# 테스트 job:
+# - Python 설정
+# - uv로 의존성 설치
+# - 린트 검사 (ruff)
+# - 포맷 검사 (black)
+# - 테스트 실행 (pytest)
+
+# 빌드 job:
+# - Docker 이미지 빌드
+# - 컨테이너 실행 테스트
+# - Health check 검증
+```
+
+---
+
+## 🛠️ 고급 설정
+
+### 환경별 배포 (Development, Staging, Production)
+
+#### 1. 환경 생성
+
+Repository → Settings → Environments → New environment
+
+- `development`
+- `staging`
+- `production`
+
+#### 2. 환경별 Secrets 설정
+
+각 환경에 별도의 Secrets 설정 가능
+
+#### 3. Workflow 수정
+
+```yaml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production  # 환경 지정
+    
+    steps:
+    # ... (기존 단계)
+```
+
+### 승인 프로세스 추가
+
+Environment → Protection rules → Required reviewers
+
+Production 환경에 배포 전 승인 요구 가능
+
+### 배포 스케줄링
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * 0'  # 매주 일요일 00:00 UTC
+  workflow_dispatch:
+```
+
+### Blue-Green 배포
+
+```yaml
+- name: Deploy to Container App (Blue-Green)
+  run: |
+    # 새 revision 배포
+    az containerapp update \
+      --name ${{ env.CONTAINER_APP_NAME }} \
+      --resource-group ${{ env.RESOURCE_GROUP }} \
+      --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    
+    # Traffic splitting (선택사항)
+    az containerapp ingress traffic set \
+      --name ${{ env.CONTAINER_APP_NAME }} \
+      --resource-group ${{ env.RESOURCE_GROUP }} \
+      --revision-weight latest=100
+```
+
+---
+
+## 🐛 트러블슈팅
+
+### 워크플로우 실패 원인
+
+#### 1. Azure 인증 실패
+
+```
+Error: Az CLI Login failed. Please check the credentials.
+```
+
+**해결**:
+- `AZURE_CREDENTIALS` Secret 확인
+- Service Principal 권한 확인 (Contributor 역할)
+- Service Principal 만료 확인
+
+```bash
+# Service Principal 재생성
+az ad sp create-for-rbac \
+  --name "github-actions-etf-agent" \
+  --role contributor \
+  --scopes /subscriptions/{SUBSCRIPTION_ID}/resourceGroups/rg-sk-appinsights \
+  --sdk-auth
+```
+
+#### 2. Container Registry 접근 실패
+
+```
+Error: unauthorized: authentication required
+```
+
+**해결**:
+- Container Registry Admin 계정 활성화 확인
+- Service Principal에 ACR Pull/Push 권한 부여
+
+```bash
+# ACR Admin 활성화
+az acr update --name crskappinsights --admin-enabled true
+
+# Service Principal에 ACR Push 권한 부여
+az role assignment create \
+  --assignee {SERVICE_PRINCIPAL_CLIENT_ID} \
+  --role AcrPush \
+  --scope /subscriptions/{SUBSCRIPTION_ID}/resourceGroups/rg-sk-appinsights/providers/Microsoft.ContainerRegistry/registries/crskappinsights
+```
+
+#### 3. Docker 빌드 실패
+
+```
+Error: failed to solve: process "/bin/sh -c npm run build" did not complete successfully
+```
+
+**해결**:
+- Dockerfile 구문 확인
+- 로컬에서 빌드 테스트
+
+```bash
+docker build -t test .
+```
+
+#### 4. Container App 배포 실패
+
+```
+Error: The subscription is not registered to use namespace 'Microsoft.App'
+```
+
+**해결**:
+```bash
+# Container App provider 등록
+az provider register --namespace Microsoft.App
+az provider register --namespace Microsoft.OperationalInsights
+```
+
+#### 5. Health Check 실패
+
+**CI 워크플로우에서 Health Check 타임아웃**
+
+**해결**:
+- 컨테이너 로그 확인 (워크플로우 로그에 출력됨)
+- 환경변수 누락 확인
+- `/health` 엔드포인트 구현 확인
+
+---
+
+## 📚 추가 리소스
+
+### GitHub Actions 공식 문서
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [Workflow Syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
+
+### Azure 관련
+- [Azure Login Action](https://github.com/Azure/login)
+- [Azure Container Apps with GitHub Actions](https://learn.microsoft.com/azure/container-apps/github-actions)
+- [Azure CLI Reference](https://learn.microsoft.com/cli/azure/containerapp)
+
+### Best Practices
+- [GitHub Actions Best Practices](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+- [Docker Multi-stage Builds](https://docs.docker.com/build/building/multi-stage/)
+
+---
+
+## ✅ 체크리스트
+
+설정 완료 확인:
+
+- [ ] Azure 서비스 주체 생성 및 `AZURE_CREDENTIALS` Secret 설정
+- [ ] Application Insights Connection String Secret 설정
+- [ ] Cosmos DB Endpoint 및 Key Secret 설정
+- [ ] OpenAI API Key Secret 설정
+- [ ] 외부 API Key Secret 설정 (선택)
+- [ ] Container Registry Admin 계정 활성화
+- [ ] Service Principal ACR 권한 부여
+- [ ] Workflow 파일 main 브랜치에 커밋
+- [ ] 첫 번째 워크플로우 실행 성공 확인
+- [ ] 배포된 앱 Health Check 성공
+
+---
+
+완료! GitHub Actions를 통한 자동 배포 준비 완료! 🎉
+
+## 🚀 빠른 시작
+
+```bash
+# 1. Secrets 설정 (GitHub Repository Settings)
+
+# 2. 코드 푸시
+git add .
+git commit -m "ci: Add GitHub Actions workflows"
+git push origin main
+
+# 3. Actions 탭에서 배포 진행 확인
+# https://github.com/dotnetpower/sk-appinsights/actions
+
+# 4. 배포 완료 후 앱 URL 확인
+```
