@@ -1,6 +1,13 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+// 프로덕션 환경에서는 빈 값으로 설정하여 상대경로 사용
+// 개발 환경에서는 localhost:8000 사용
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL !== undefined
+    ? process.env.REACT_APP_API_URL
+    : process.env.NODE_ENV === "production"
+    ? ""
+    : "http://localhost:8000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,

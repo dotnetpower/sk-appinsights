@@ -13,6 +13,8 @@
 
 ETF 및 주식 종목 데이터 분석 에이전트 프로젝트, 주식 데이터는 실제 데이터이지만 Application Insights 의 모니터링 기능 시연을 위한 예제입니다.
 
+[실습](https://moaw.dev/workshop/gh:dotnetpower/sk-appinsights/main/docs/?step=0)
+
 ## 프로젝트 구조
 
 ```
@@ -108,8 +110,6 @@ sk-appinsights/
 
 ## 기술 스택
 
-## 기술 스택
-
 ### Backend
 - **Python 3.13+**: 최신 Python 런타임
 - **uv**: 고속 Python 패키지 관리자
@@ -184,28 +184,41 @@ cp .env.example .env
 
 **필수 환경변수**:
 ```bash
+# Azure Container Registry (배포용)
+CONTAINER_REGISTRY_NAME=crskappinsights
+RESOURCE_GROUP=rg-sk-appinsights
+LOCATION=koreacentral
+CONTAINER_APP_NAME=ca-sk-appinsights
+
 # Application Insights (필수)
-APPLICATIONINSIGHTS_CONNECTION_STRING="InstrumentationKey=xxx;IngestionEndpoint=https://xxx"
+APPLICATIONINSIGHTS_CONNECTION_STRING="InstrumentationKey=xxx;IngestionEndpoint=https://koreacentral-0.in.applicationinsights.azure.com/;LiveEndpoint=https://koreacentral.livediagnostics.monitor.azure.com/;ApplicationId=xxx"
 
 # Azure Cosmos DB (필수)
 COSMOS_ENDPOINT="https://xxx.documents.azure.com:443/"
-COSMOS_KEY="your-cosmos-key"
+# Azure AD (RBAC) 인증 사용 시 - COSMOS_KEY 생략 가능
+# COSMOS_KEY="your-cosmos-key"
 COSMOS_DATABASE_NAME="etf-agent"
-COSMOS_CONTAINER_NAME="stocks"
+COSMOS_CONTAINER_NAME="etf-data"  # partition key = /symbol
 
 # OpenAI (필수 - AI 채팅 기능)
 OPENAI_API_KEY="sk-xxx"
-# 또는 Azure OpenAI
+OPENAI_ORG_ID=""
+
+# Azure OpenAI (Alternative)
 AZURE_OPENAI_ENDPOINT="https://xxx.openai.azure.com/"
 AZURE_OPENAI_API_KEY="xxx"
-AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4"
+AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o-mini"
+AZURE_OPENAI_API_VERSION="2024-08-01-preview"
 
 # 주식 데이터 API (선택적, 무료 티어 사용 가능)
-ALPHA_VANTAGE_API_KEY="your-alpha-vantage-key"  # alphavantage.co
-TOTAL_REAL_RETURNS_API_KEY="your-trr-key"       # totalrealreturns.com
+ALPHA_VANTAGE_KEY="your-alpha-vantage-key"  # alphavantage.co
 
-# 환경 설정
-ENVIRONMENT="development"  # development, production
+# FastAPI
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# React Frontend
+REACT_APP_API_URL=http://localhost:8000
 ```
 
 ### 3. Backend 실행

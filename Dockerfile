@@ -6,6 +6,7 @@ FROM node:22-bookworm-slim AS frontend-builder
 ARG REACT_APP_VERSION=0.1.0
 ARG REACT_APP_GIT_COMMIT=dev
 ARG REACT_APP_BUILD_TIME=local
+ARG REACT_APP_API_URL=""
 
 # Update packages and install security patches
 RUN apt-get update && \
@@ -31,6 +32,7 @@ COPY frontend/ ./
 ENV REACT_APP_VERSION=$REACT_APP_VERSION
 ENV REACT_APP_GIT_COMMIT=$REACT_APP_GIT_COMMIT
 ENV REACT_APP_BUILD_TIME=$REACT_APP_BUILD_TIME
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 # Build frontend
 RUN npm run build
