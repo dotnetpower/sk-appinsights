@@ -20,10 +20,24 @@ jobs:
     - name: 🔄 Checkout code
       uses: actions/checkout@v4
     
-    - name: 🔐 Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: 🔐 Azure Login (Service Principal)
+      run: |
+        # AZURE_CREDENTIALS Secret에서 값 추출
+        CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
+        CLIENT_SECRET=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientSecret')
+        TENANT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.tenantId')
+        SUBSCRIPTION_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.subscriptionId')
+        
+        # Azure CLI 로그인
+        az login --service-principal \
+          --username $CLIENT_ID \
+          --password $CLIENT_SECRET \
+          --tenant $TENANT_ID
+        
+        # 구독 설정
+        az account set --subscription $SUBSCRIPTION_ID
+        
+        echo "✅ Azure 로그인 완료"
     
     - name: 🐳 Login to Azure Container Registry
       run: |

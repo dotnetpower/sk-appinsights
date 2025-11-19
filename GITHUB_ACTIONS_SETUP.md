@@ -29,7 +29,9 @@ Repository → Settings → Secrets and variables → Actions → New repository
 
 #### 1. Azure 인증 정보
 
-**`AZURE_CREDENTIALS`** - Azure 서비스 주체 (Service Principal)
+**방법 1: AZURE_CREDENTIALS (현재 사용 중)**
+
+Service Principal의 전체 JSON을 저장합니다.
 
 ```bash
 # 1. Azure CLI로 서비스 주체 생성
@@ -50,7 +52,19 @@ az ad sp create-for-rbac \
 }
 ```
 
-**주의**: 전체 JSON 출력을 복사하여 `AZURE_CREDENTIALS` Secret에 저장하세요.
+**Secret 이름**: `AZURE_CREDENTIALS`  
+**값**: 위 JSON 전체 내용
+
+**방법 2: 개별 Secrets (대안)**
+
+JSON 형식 대신 개별 값으로 저장할 수도 있습니다:
+
+- `AZURE_CLIENT_ID`: Service Principal의 Client ID
+- `AZURE_CLIENT_SECRET`: Service Principal의 Client Secret
+- `AZURE_TENANT_ID`: Azure AD Tenant ID
+- `AZURE_SUBSCRIPTION_ID`: Azure Subscription ID
+
+**주의**: 현재 워크플로우는 `AZURE_CREDENTIALS` 방식을 사용합니다.
 
 #### 2. Application Insights
 
@@ -296,11 +310,52 @@ on:
 
 #### 1. Azure 인증 실패
 
+**에러**:
 ```
-Error: Az CLI Login failed. Please check the credentials.
+Error: Using auth-type: SERVICE_PRINCIPAL. Not all values are present. 
+Ensure 'client-id' and 'tenant-id' are supplied.
 ```
 
+**원인**: `AZURE_CREDENTIALS` Secret의 JSON 형식이 올바르지 않거나 누락됨
+
 **해결**:
+
+1. Service Principal 재생성:
+```bash
+az ad sp create-for-rbac \
+  --name "github-actions-etf-agent" \
+  --role contributor \
+  --scopes /subscriptions/{SUBSCRIPTION_ID}/resourceGroups/rg-sk-appinsights \
+  --sdk-auth
+```
+
+2. **출력된 JSON 전체**를 복사하여 GitHub Secret에 저장:
+   - Repository → Settings → Secrets and variables → Actions
+   - "New repository secret" 클릭
+   - Name: `AZURE_CREDENTIALS`
+   - Value: JSON 전체 내용 (아래 예시 형식)
+   
+```json
+{
+  "clientId": "12345678-1234-1234-1234-123456789abc",
+  "clientSecret": "your-secret-value",
+  "subscriptionId": "87654321-4321-4321-4321-cba987654321",
+  "tenantId": "11111111-1111-1111-1111-111111111111",
+  "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
+  "resourceManagerEndpointUrl": "https://management.azure.com/",
+  "activeDirectoryGraphResourceId": "https://graph.windows.net/",
+  "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
+  "galleryEndpointUrl": "https://gallery.azure.com/",
+  "managementEndpointUrl": "https://management.core.windows.net/"
+}
+```
+
+3. JSON 형식 확인:
+   - 유효한 JSON인지 확인 ([JSONLint](https://jsonlint.com/) 사용)
+   - 중괄호 `{}`로 시작하고 끝나는지 확인
+   - 모든 필드가 포함되어 있는지 확인
+
+**에러**:
 - `AZURE_CREDENTIALS` Secret 확인
 - Service Principal 권한 확인 (Contributor 역할)
 - Service Principal 만료 확인
@@ -410,6 +465,91 @@ az provider register --namespace Microsoft.OperationalInsights
 완료! GitHub Actions를 통한 자동 배포 준비 완료! 🎉
 
 ## 🚀 빠른 시작
+
+### 단계별 설정 가이드
+
+#### Step 1: Service Principal 생성
+
+```bash
+# Azure 구독 ID 확인
+az account show --query id -o tsv
+
+# Service Principal 생성 (출력을 복사하세요!)
+az ad sp create-for-rbac \
+  --name "github-actions-etf-agent" \
+  --role contributor \
+  --scopes /subscriptions/b052302c-4c8d-49a4-aa2f-9d60a7301a80/resourceGroups/rg-sk-appinsights \
+  --sdk-auth
+
+# ⚠️ 출력된 JSON 전체를 복사하여 저장하세요!
+```
+
+#### Step 2: GitHub Secrets 설정
+
+1. GitHub Repository 이동: https://github.com/dotnetpower/sk-appinsights
+2. Settings → Secrets and variables → Actions
+3. "New repository secret" 클릭하여 다음 Secrets 추가:
+
+**필수 Secrets**:
+
+| Secret 이름 | 값 | 확인 방법 |
+|------------|-----|----------|
+| `AZURE_CREDENTIALS` | Service Principal JSON 전체 | Step 1에서 복사한 JSON |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | InstrumentationKey=... | Azure Portal → App Insights → Overview |
+| `COSMOS_ENDPOINT` | https://xxx.documents.azure.com:443/ | Azure Portal → Cosmos DB → Keys |
+| `COSMOS_KEY` | Primary Key | Azure Portal → Cosmos DB → Keys |
+| `COSMOS_DATABASE_NAME` | etf-agent | 데이터베이스 이름 |
+| `COSMOS_CONTAINER_NAME` | etf-data | 컨테이너 이름 |
+| `OPENAI_API_KEY` | sk-... | OpenAI Platform |
+
+**선택 Secrets**:
+
+| Secret 이름 | 값 |
+|------------|-----|
+| `ALPHA_VANTAGE_API_KEY` | Alpha Vantage API Key |
+| `FINNHUB_API_KEY` | Finnhub API Key |
+
+#### Step 3: Secrets 검증
+
+설정한 Secrets 확인:
+```bash
+# GitHub CLI 사용
+gh secret list
+
+# 예상 출력:
+# ALPHA_VANTAGE_API_KEY          Updated 2024-01-01
+# APPLICATIONINSIGHTS_CONNECTION_STRING  Updated 2024-01-01
+# AZURE_CREDENTIALS               Updated 2024-01-01
+# COSMOS_CONTAINER_NAME           Updated 2024-01-01
+# COSMOS_DATABASE_NAME            Updated 2024-01-01
+# COSMOS_ENDPOINT                 Updated 2024-01-01
+# COSMOS_KEY                      Updated 2024-01-01
+# FINNHUB_API_KEY                 Updated 2024-01-01
+# OPENAI_API_KEY                  Updated 2024-01-01
+```
+
+#### Step 4: 워크플로우 커밋 및 푸시
+
+```bash
+# 1. 워크플로우 파일 커밋
+git add .github/workflows/
+git commit -m "ci: Add GitHub Actions CI/CD workflows"
+git push origin main
+
+# 2. GitHub Actions 실행 확인
+# https://github.com/dotnetpower/sk-appinsights/actions
+```
+
+#### Step 5: 배포 확인
+
+워크플로우 완료 후:
+1. Actions 탭에서 워크플로우 클릭
+2. Summary 섹션에서 App URL 확인
+3. 브라우저에서 App URL 접속하여 Health Check 확인
+
+---
+
+## 🚀 빠른 시작 (이전 버전)
 
 ```bash
 # 1. Secrets 설정 (GitHub Repository Settings)
