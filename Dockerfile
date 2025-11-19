@@ -1,6 +1,20 @@
 # Multi-stage build for ETF Agent
 # Stage 1: Build frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:22-bookworm-slim AS frontend-builder
+
+# Build arguments
+ARG REACT_APP_VERSION=0.1.0
+ARG REACT_APP_GIT_COMMIT=dev
+ARG REACT_APP_BUILD_TIME=local
+
+# Update packages and install security patches
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && npm install -g npm@latest
 
 WORKDIR /app/frontend
 
@@ -13,18 +27,27 @@ RUN npm ci --legacy-peer-deps
 # Copy frontend source
 COPY frontend/ ./
 
+# Set environment variables for build
+ENV REACT_APP_VERSION=$REACT_APP_VERSION
+ENV REACT_APP_GIT_COMMIT=$REACT_APP_GIT_COMMIT
+ENV REACT_APP_BUILD_TIME=$REACT_APP_BUILD_TIME
+
 # Build frontend
 RUN npm run build
 
 # Stage 2: Python backend
-FROM python:3.13-slim
+FROM python:3.13-slim-bookworm
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies and security updates
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
@@ -40,6 +63,13 @@ COPY src/ ./src/
 
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
 EXPOSE 8000

@@ -61,6 +61,13 @@ function App() {
   const [tabValue, setTabValue] = useState(0);
   const [userId] = useState(() => getUserId());
 
+  // 빌드 정보
+  const buildInfo = {
+    version: process.env.REACT_APP_VERSION || "0.1.0",
+    commit: process.env.REACT_APP_GIT_COMMIT || "dev",
+    buildTime: process.env.REACT_APP_BUILD_TIME || "local",
+  };
+
   // 페이지 이름 매핑
   const pageNames = [
     "Dashboard",
@@ -102,6 +109,19 @@ function App() {
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               ETF Agent - 주식 & ETF 분석 대시보드
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                opacity: 0.7,
+                fontFamily: "monospace",
+                fontSize: "0.75rem",
+              }}
+            >
+              v{buildInfo.version} | {buildInfo.commit} |{" "}
+              {new Date(buildInfo.buildTime).toLocaleString("ko-KR", {
+                timeZone: "Asia/Seoul",
+              })}
             </Typography>
           </Toolbar>
           <Tabs value={tabValue} onChange={handleTabChange} centered>
