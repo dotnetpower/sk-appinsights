@@ -6,7 +6,7 @@ short_title: Application Insights 실전 워크숍
 description: Azure Application Insights를 활용한 AI 에이전트 애플리케이션의 실시간 모니터링, 성능 분석, 사용자 행동 추적 심층 학습
 level: intermediate
 authors:
-  - Moon Hyuk Choi, CSA
+  - Moon Hyuk Choi, AI Apps CSA
 contacts:
   - moonchoi@microsoft.com
 duration_minutes: 240
@@ -27,6 +27,12 @@ lang: ko
 ## 📘 워크숍 개요
 
 이 워크숍에서는 **Azure Application Insights**를 실제 AI 에이전트 애플리케이션(ETF Agent)에 통합하여 프로덕션급 모니터링 시스템을 구축하는 방법을 배웁니다.
+
+<div class="warning" data-title="AI 생성 컨텐츠">
+
+> 본 내용은 AI 도구(Claude, GitHub Copilot 등)를 활용하여 작성되었으며, 일부 내용은 사실과 다를 수 있습니다. 큰 틀에서 이해를 돕기 위한 참고 자료로 활용해 주세요.
+
+</div>
 
 ### 🎯 학습 목표
 
