@@ -5,10 +5,10 @@ FROM node:18-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Copy frontend package files
-COPY frontend/package*.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (use legacy-peer-deps to avoid conflicts)
+RUN npm ci --legacy-peer-deps
 
 # Copy frontend source
 COPY frontend/ ./
@@ -31,11 +31,10 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy Python project files
-COPY pyproject.toml ./
-COPY uv.lock ./
+COPY pyproject.toml uv.lock* ./
 
 # Install Python dependencies
-RUN uv sync --no-dev
+RUN uv sync --no-dev --frozen
 
 # Copy backend source code
 COPY src/ ./src/
