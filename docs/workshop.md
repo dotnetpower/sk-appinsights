@@ -13,7 +13,7 @@ duration_minutes: 240
 tags: azure, application-insights, monitoring, python, fastapi, opentelemetry
 audience: pro devs, cloud engineers
 navigation_levels: 3
-navigation_numbering: true
+navigation_numbering: false
 lang: ko
 #####
 # moaw s . -p 8081
@@ -22,7 +22,7 @@ lang: ko
 
 # Azure Application Insights 실전 워크숍
 
-*Version 2.0 - 2025년 11월*
+*Version 1.0 - 2025년 11월*
 
 ## 📘 워크숍 개요
 
@@ -69,6 +69,8 @@ Azure Application Insights는 Microsoft의 **APM(Application Performance Managem
 - ✅ **사용자 분석**: 페이지뷰, 이벤트, 세션 추적
 - ✅ **스마트 탐지**: AI 기반 이상 징후 탐지
 - ✅ **통합 대시보드**: Azure Monitor와 완벽한 통합
+
+![Image description](assets/app-insights-overview-screenshot.png)
 
 ### 📊 Azure Monitor 메트릭 유형 이해
 
@@ -227,7 +229,7 @@ Application Insights는 다음 표준 테이블에 데이터를 저장합니다:
 
 ### Azure Portal에서 Application Insights 생성
 
-1. **Azure Portal 접속**: https://portal.azure.com
+1. **Azure Portal 접속**: [Azure Portal](https://portal.azure.com)
 
 2. **리소스 생성**:
    ```
@@ -354,10 +356,10 @@ def setup_telemetry(app=None):
             "deployment.environment": os.getenv("ENVIRONMENT", "development"),
         })
         
-        # Azure Monitor 설정
+        # Azure Monitor 설정 (Live Metrics 활성화)
         configure_azure_monitor(
             connection_string=connection_string,
-            enable_live_metrics=True,
+            enable_live_metrics=True,  # 🔴 Live Metrics 활성화 (필수)
             resource=resource,
         )
         
@@ -381,6 +383,7 @@ def setup_telemetry(app=None):
         
         logger.info("=" * 60)
         logger.info("📊 Application Insights 텔레메트리 활성화")
+        logger.info("🔴 Live Metrics 활성화됨 (실시간 모니터링 가능)")
         logger.info("=" * 60)
         
     except Exception as e:
@@ -616,6 +619,26 @@ requests
 Live Metrics는 **1-2초 지연**으로 애플리케이션의 실시간 상태를 모니터링하는 기능입니다.
 
 **일반 Logs (1-2분 지연)** vs **Live Metrics (1-2초 지연)**
+![Image description](assets/live-metric.png)
+
+<div class="important" data-title="⚠️ Live Metrics 활성화 필수 설정">
+
+> Live Metrics를 사용하려면 Python 코드에서 **반드시** `enable_live_metrics=True` 설정이 필요합니다:
+> 
+> ```python
+> configure_azure_monitor(
+>     connection_string=connection_string,
+>     enable_live_metrics=True,  # 🔴 필수!
+>     resource=resource,
+> )
+> ```
+> 
+> 또한 Connection String에 **LiveEndpoint**가 포함되어 있어야 합니다:
+> ```
+> InstrumentationKey=xxx;IngestionEndpoint=xxx;LiveEndpoint=https://xxx.livediagnostics.monitor.azure.com/
+> ```
+
+</div>
 
 ### 주요 기능:
 - ⚡ 실시간 요청 처리 현황
@@ -1023,6 +1046,76 @@ def track_user_event(
         
     except Exception as e:
         logger.error(f"Failed to track event: {e}")
+
+
+def track_ai_token_usage(
+    model: str,
+    prompt_tokens: int,
+    completion_tokens: int,
+    total_tokens: int,
+    operation: str = "chat"
+):
+    """
+    AI Token 사용량 추적 → customMetrics 테이블
+    
+    Args:
+        model: AI 모델 이름 (gpt-4, gpt-3.5-turbo 등)
+        prompt_tokens: 프롬프트 토큰 수
+        completion_tokens: 완료 토큰 수
+        total_tokens: 총 토큰 수
+        operation: 작업 유형 (chat, completion, embedding 등)
+    """
+    if not _telemetry_client:
+        return
+    
+    try:
+        # 비용 계산 (예시: GPT-4 가격)
+        cost_per_1k_prompt = 0.03  # $0.03 per 1K prompt tokens
+        cost_per_1k_completion = 0.06  # $0.06 per 1K completion tokens
+        
+        estimated_cost = (
+            (prompt_tokens / 1000 * cost_per_1k_prompt) +
+            (completion_tokens / 1000 * cost_per_1k_completion)
+        )
+        
+        # customMetrics에 기록
+        _telemetry_client.track_metric(
+            name="ai.tokens.total",
+            value=total_tokens,
+            properties={
+                "model": model,
+                "operation": operation,
+            }
+        )
+        
+        _telemetry_client.track_metric(
+            name="ai.tokens.prompt",
+            value=prompt_tokens,
+            properties={"model": model}
+        )
+        
+        _telemetry_client.track_metric(
+            name="ai.tokens.completion",
+            value=completion_tokens,
+            properties={"model": model}
+        )
+        
+        _telemetry_client.track_metric(
+            name="ai.cost.estimated_usd",
+            value=estimated_cost,
+            properties={"model": model}
+        )
+        
+        _telemetry_client.flush()
+        
+        logger.info(
+            f"💰 AI Token usage: {total_tokens} tokens "
+            f"(prompt: {prompt_tokens}, completion: {completion_tokens}) "
+            f"| Estimated cost: ${estimated_cost:.4f}"
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to track AI token usage: {e}")
 ```
 
 ## 🛠️ 실습 3-2: 백엔드 API 엔드포인트
@@ -1052,6 +1145,13 @@ class EventRequest(BaseModel):
     user_id: str | None = None
     session_id: str | None = None
     properties: dict | None = None
+
+class AITokenUsageRequest(BaseModel):
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    operation: str = "chat"
 
 @router.post("/page-view")
 async def log_page_view(data: PageViewRequest):
@@ -1085,6 +1185,108 @@ async def log_event(data: EventRequest):
     track_user_event(
         name=data.event_name,
         properties=properties,
+    )
+    
+    return {"status": "success"}
+
+@router.post("/ai-token-usage")
+async def log_ai_token_usage(data: AITokenUsageRequest):
+    """AI Token 사용량 로깅"""
+    track_ai_token_usage(
+        model=data.model,
+        prompt_tokens=data.prompt_tokens,
+        completion_tokens=data.completion_tokens,
+        total_tokens=data.total_tokens,
+        operation=data.operation,
+    )
+    
+    return {"status": "success"}
+```
+
+### AI 에이전트에서 Token 추적 예시
+
+`src/agent/agent_service.py`:
+
+```python
+from opentelemetry import trace
+from ..observability.telemetry import track_ai_token_usage
+
+tracer = trace.get_tracer(__name__)
+
+async def chat_with_agent(user_message: str, user_id: str):
+    """AI 에이전트와 대화"""
+    with tracer.start_as_current_span("agent.chat") as span:
+        span.set_attribute("user_id", user_id)
+        span.set_attribute("message_length", len(user_message))
+        
+        try:
+            # Semantic Kernel 또는 OpenAI API 호출
+            response = await kernel.invoke(
+                function_name="chat",
+                input=user_message
+            )
+            
+            # Token 사용량 추출 (OpenAI API 응답에서)
+            if hasattr(response, 'usage'):
+                usage = response.usage
+                
+                # Application Insights에 기록
+                track_ai_token_usage(
+                    model="gpt-4",
+                    prompt_tokens=usage.prompt_tokens,
+                    completion_tokens=usage.completion_tokens,
+                    total_tokens=usage.total_tokens,
+                    operation="chat"
+                )
+                
+                # Span에도 추가
+                span.set_attribute("ai.tokens.prompt", usage.prompt_tokens)
+                span.set_attribute("ai.tokens.completion", usage.completion_tokens)
+                span.set_attribute("ai.tokens.total", usage.total_tokens)
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            span.record_exception(e)
+            raise
+```
+
+### Token 사용량 조회 쿼리
+
+```kusto
+// 모델별 Token 사용량 및 비용
+customMetrics
+| where name == "ai.tokens.total"
+| where timestamp > ago(24h)
+| extend model = tostring(customDimensions["model"])
+| summarize 
+    total_tokens = sum(value),
+    request_count = count(),
+    avg_tokens_per_request = avg(value)
+  by model
+| join kind=inner (
+    customMetrics
+    | where name == "ai.cost.estimated_usd"
+    | where timestamp > ago(24h)
+    | extend model = tostring(customDimensions["model"])
+    | summarize estimated_cost = sum(value) by model
+) on model
+| project 
+    model,
+    total_tokens,
+    request_count,
+    avg_tokens_per_request = round(avg_tokens_per_request, 0),
+    estimated_cost_usd = round(estimated_cost, 2)
+| order by total_tokens desc
+```
+
+**예상 출력**:
+```
+model           | total_tokens | request_count | avg_tokens | estimated_cost_usd
+----------------|--------------|---------------|------------|-------------------
+gpt-4           | 1,250,000    | 2,500         | 500        | $62.50
+gpt-3.5-turbo   | 850,000      | 3,400         | 250        | $1.70
+```
     )
     
     return {"status": "success"}
@@ -1520,6 +1722,16 @@ union
 
 ## 🛠️ 실습 4-4: 코호트 분석
 
+### 💡 코호트 분석이란?
+
+코호트 분석은 특정 기간에 가입하거나 활동을 시작한 사용자 그룹(코호트)의 행동을 시간 경과에 따라 추적하는 분석 방법입니다.
+
+**주요 활용**:
+- 📊 사용자 유지율(Retention) 측정
+- 📈 제품 개선 효과 분석
+- 🎯 마케팅 캠페인 효과 측정
+- 🔍 사용자 생애주기(Lifecycle) 이해
+
 ### 주간 사용자 코호트
 
 ```kusto
@@ -1527,6 +1739,7 @@ let cohort_data = union
   (pageViews | extend user_id = tostring(customDimensions["user_id"])),
   (customEvents | extend user_id = tostring(customDimensions["user_id"]))
 | where user_id != "N/A"
+| where timestamp > ago(90d)
 | summarize 
     first_seen = min(timestamp),
     last_seen = max(timestamp)
@@ -1539,12 +1752,18 @@ cohort_data
 | order by cohort_week asc, weeks_active asc
 ```
 
+**해석 방법**:
+- `cohort_week`: 사용자가 처음 방문한 주
+- `weeks_active`: 처음 방문 이후 몇 주 뒤에 활동했는지
+- `user_count`: 해당 주차에 활동한 사용자 수
+
 ### 유지율 분석 (Retention)
 
 ```kusto
 let users_by_day = pageViews
 | extend user_id = tostring(customDimensions["user_id"])
 | where user_id != "N/A"
+| where timestamp > ago(30d)
 | extend day = startofday(timestamp)
 | summarize by user_id, day;
 
@@ -1561,7 +1780,393 @@ users_by_day
     cumulative_retention = round(100.0 * user_count / first(user_count), 2)
 ```
 
-## 🛠️ 실습 4-5: 의존성 및 성능 분석
+**핵심 메트릭**:
+- **Day 0 Retention**: 첫 방문 사용자 수 (기준점)
+- **Day 1 Retention**: 다음 날 재방문율
+- **Day 7 Retention**: 7일 후 유지율
+- **Day 30 Retention**: 30일 후 유지율
+
+### 코호트 매트릭스 시각화
+
+```kusto
+// 주간 코호트 매트릭스 (Retention Table)
+let cohort_users = union
+  (pageViews | extend user_id = tostring(customDimensions["user_id"])),
+  (customEvents | extend user_id = tostring(customDimensions["user_id"]))
+| where user_id != "N/A"
+| where timestamp > ago(90d)
+| extend week = startofweek(timestamp)
+| summarize first_week = min(week) by user_id;
+
+let activity_data = union
+  (pageViews | extend user_id = tostring(customDimensions["user_id"])),
+  (customEvents | extend user_id = tostring(customDimensions["user_id"]))
+| where user_id != "N/A"
+| where timestamp > ago(90d)
+| extend week = startofweek(timestamp)
+| distinct user_id, week;
+
+cohort_users
+| join kind=inner activity_data on user_id
+| extend weeks_since_first = datetime_diff('week', week, first_week)
+| summarize active_users = dcount(user_id) by first_week, weeks_since_first
+| join kind=inner (
+    cohort_users
+    | summarize cohort_size = dcount(user_id) by first_week
+) on first_week
+| extend retention_pct = round(100.0 * active_users / cohort_size, 1)
+| project first_week, weeks_since_first, cohort_size, active_users, retention_pct
+| order by first_week asc, weeks_since_first asc
+```
+
+**읽는 방법**:
+```
+Cohort Week  | Week 0 | Week 1 | Week 2 | Week 3
+-------------|--------|--------|--------|--------
+2024-10-01   | 100%   | 45%    | 32%    | 28%
+2024-10-08   | 100%   | 52%    | 38%    | -
+2024-10-15   | 100%   | 48%    | -      | -
+```
+
+### RFM 분석 (Recency, Frequency, Monetary)
+
+```kusto
+// 사용자별 RFM 스코어 계산
+let analysis_period = 30d;
+let current_date = now();
+
+let user_activity = union
+  (pageViews | extend user_id = tostring(customDimensions["user_id"])),
+  (customEvents | extend user_id = tostring(customDimensions["user_id"]))
+| where user_id != "N/A"
+| where timestamp > ago(analysis_period);
+
+user_activity
+| summarize 
+    last_activity = max(timestamp),
+    first_activity = min(timestamp),
+    total_events = count(),
+    distinct_days = dcount(startofday(timestamp)),
+    page_views = countif(itemType == "pageView"),
+    custom_events = countif(itemType == "customEvent")
+  by user_id
+| extend 
+    recency_days = datetime_diff('day', current_date, last_activity),
+    frequency_score = total_events,
+    engagement_days = distinct_days
+| extend 
+    recency_score = case(
+        recency_days <= 1, 5,
+        recency_days <= 3, 4,
+        recency_days <= 7, 3,
+        recency_days <= 14, 2,
+        1
+    ),
+    frequency_tier = case(
+        total_events >= 100, 5,
+        total_events >= 50, 4,
+        total_events >= 20, 3,
+        total_events >= 10, 2,
+        1
+    ),
+    engagement_tier = case(
+        engagement_days >= 20, 5,
+        engagement_days >= 10, 4,
+        engagement_days >= 5, 3,
+        engagement_days >= 2, 2,
+        1
+    )
+| extend rfm_score = recency_score + frequency_tier + engagement_tier
+| extend user_segment = case(
+    rfm_score >= 13, "Champions",        // 최고 등급
+    rfm_score >= 11, "Loyal Customers",  // 충성 고객
+    rfm_score >= 9, "Potential Loyalists", // 잠재 충성 고객
+    rfm_score >= 7, "Recent Users",      // 신규 사용자
+    rfm_score >= 5, "At Risk",           // 이탈 위험
+    "Lost"                                // 이탈 사용자
+)
+| project 
+    user_id,
+    last_activity,
+    recency_days,
+    total_events,
+    engagement_days,
+    recency_score,
+    frequency_tier,
+    engagement_tier,
+    rfm_score,
+    user_segment
+| order by rfm_score desc
+```
+
+**사용자 세그먼트 정의**:
+- **Champions** (13-15점): 최근 활동, 높은 빈도, 높은 참여 → VIP 대우
+- **Loyal Customers** (11-12점): 정기적 사용자 → 보상 프로그램
+- **Potential Loyalists** (9-10점): 성장 가능성 → 육성 필요
+- **Recent Users** (7-8점): 신규 사용자 → 온보딩 강화
+- **At Risk** (5-6점): 이탈 위험 → 재참여 캠페인
+- **Lost** (3-4점): 이탈 사용자 → 재활성화 전략
+
+### 세그먼트별 집계
+
+```kusto
+// RFM 세그먼트별 통계
+let analysis_period = 30d;
+let current_date = now();
+
+let user_activity = union
+  (pageViews | extend user_id = tostring(customDimensions["user_id"])),
+  (customEvents | extend user_id = tostring(customDimensions["user_id"]))
+| where user_id != "N/A"
+| where timestamp > ago(analysis_period);
+
+let rfm_data = user_activity
+| summarize 
+    last_activity = max(timestamp),
+    total_events = count(),
+    distinct_days = dcount(startofday(timestamp))
+  by user_id
+| extend 
+    recency_days = datetime_diff('day', current_date, last_activity),
+    recency_score = case(recency_days <= 1, 5, recency_days <= 3, 4, recency_days <= 7, 3, recency_days <= 14, 2, 1),
+    frequency_tier = case(total_events >= 100, 5, total_events >= 50, 4, total_events >= 20, 3, total_events >= 10, 2, 1),
+    engagement_tier = case(distinct_days >= 20, 5, distinct_days >= 10, 4, distinct_days >= 5, 3, distinct_days >= 2, 2, 1)
+| extend rfm_score = recency_score + frequency_tier + engagement_tier
+| extend user_segment = case(
+    rfm_score >= 13, "Champions",
+    rfm_score >= 11, "Loyal Customers",
+    rfm_score >= 9, "Potential Loyalists",
+    rfm_score >= 7, "Recent Users",
+    rfm_score >= 5, "At Risk",
+    "Lost"
+);
+
+rfm_data
+| summarize 
+    user_count = count(),
+    avg_events = avg(total_events),
+    avg_engagement_days = avg(distinct_days),
+    avg_recency_days = avg(recency_days)
+  by user_segment
+| extend user_percentage = round(100.0 * user_count / toscalar(rfm_data | count()), 1)
+| order by 
+    case(
+        user_segment == "Champions", 1,
+        user_segment == "Loyal Customers", 2,
+        user_segment == "Potential Loyalists", 3,
+        user_segment == "Recent Users", 4,
+        user_segment == "At Risk", 5,
+        6
+    )
+```
+
+### 사용자 여정 상세 추적
+
+```kusto
+// 특정 사용자의 전체 여정 시각화
+let target_user = "user_xxx"; // 분석할 사용자 ID
+
+union
+  (pageViews 
+    | extend 
+        user_id = tostring(customDimensions["user_id"]),
+        session_id = tostring(customDimensions["session_id"]),
+        duration_ms = toint(customDimensions["duration_ms"]),
+        event_type = "PageView",
+        event_name = name),
+  (customEvents 
+    | extend 
+        user_id = tostring(customDimensions["user_id"]),
+        session_id = tostring(customDimensions["session_id"]),
+        event_type = "CustomEvent",
+        event_name = name,
+        event_category = tostring(customDimensions["event_category"]))
+| where user_id == target_user
+| where timestamp > ago(30d)
+| order by timestamp asc
+| extend 
+    time_diff_seconds = datetime_diff('second', timestamp, prev(timestamp)),
+    sequence_number = row_number()
+| project 
+    sequence = sequence_number,
+    timestamp,
+    session_id,
+    event_type,
+    event_name,
+    duration_ms,
+    time_since_last = time_diff_seconds,
+    customDimensions
+```
+
+**분석 포인트**:
+- 사용자가 어떤 순서로 페이지를 방문하는가?
+- 각 페이지/기능에 얼마나 머무르는가?
+- 어떤 지점에서 이탈하는가?
+- 세션 간 간격은 얼마나 되는가?
+
+## 🛠️ 실습 4-5: 고급 사용자 행동 분석
+
+### 세션 분석
+
+```kusto
+// 세션별 활동 통계
+let session_data = union
+  (pageViews 
+    | extend 
+        user_id = tostring(customDimensions["user_id"]),
+        session_id = tostring(customDimensions["session_id"]),
+        duration_ms = toint(customDimensions["duration_ms"])),
+  (customEvents 
+    | extend 
+        user_id = tostring(customDimensions["user_id"]),
+        session_id = tostring(customDimensions["session_id"]))
+| where session_id != "N/A"
+| where timestamp > ago(7d);
+
+session_data
+| summarize 
+    session_start = min(timestamp),
+    session_end = max(timestamp),
+    page_views = countif(itemType == "pageView"),
+    events = countif(itemType == "customEvent"),
+    total_actions = count()
+  by session_id, user_id
+| extend session_duration_minutes = datetime_diff('minute', session_end, session_start)
+| summarize 
+    avg_session_duration = avg(session_duration_minutes),
+    median_session_duration = percentile(session_duration_minutes, 50),
+    avg_page_views = avg(page_views),
+    avg_events = avg(events),
+    total_sessions = count(),
+    bounce_sessions = countif(total_actions == 1)
+| extend bounce_rate = round(100.0 * bounce_sessions / total_sessions, 2)
+```
+
+**핵심 지표**:
+- **평균 세션 시간**: 사용자가 한 번의 방문에서 머무는 시간
+- **페이지 뷰/세션**: 세션당 평균 페이지 조회수
+- **바운스율**: 한 페이지만 보고 나간 비율
+
+### 기능별 사용 패턴 분석
+
+```kusto
+// 기능 사용 순서 및 빈도 분석
+customEvents
+| where timestamp > ago(7d)
+| extend 
+    event_category = tostring(customDimensions["event_category"]),
+    user_id = tostring(customDimensions["user_id"])
+| where user_id != "N/A"
+| summarize 
+    event_count = count(),
+    unique_users = dcount(user_id),
+    first_occurrence = min(timestamp),
+    last_occurrence = max(timestamp)
+  by name, event_category
+| extend 
+    events_per_user = round(1.0 * event_count / unique_users, 2),
+    adoption_rate = round(100.0 * unique_users / toscalar(
+        customEvents 
+        | where timestamp > ago(7d)
+        | extend user_id = tostring(customDimensions["user_id"])
+        | where user_id != "N/A"
+        | dcount(user_id)
+    ), 2)
+| order by event_count desc
+```
+
+### A/B 테스트 분석 템플릿
+
+```kusto
+// 두 그룹 간 성능 비교
+let variant_a_users = customEvents
+| where timestamp > ago(7d)
+| where name == "feature_variant_assigned"
+| extend 
+    user_id = tostring(customDimensions["user_id"]),
+    variant = tostring(customDimensions["variant"])
+| where variant == "A"
+| distinct user_id;
+
+let variant_b_users = customEvents
+| where timestamp > ago(7d)
+| where name == "feature_variant_assigned"
+| extend 
+    user_id = tostring(customDimensions["user_id"]),
+    variant = tostring(customDimensions["variant"])
+| where variant == "B"
+| distinct user_id;
+
+let target_conversion = "chat_message_sent";
+
+union
+  (customEvents
+    | extend user_id = tostring(customDimensions["user_id"])
+    | where user_id in (variant_a_users)
+    | where name == target_conversion
+    | summarize conversions = dcount(user_id)
+    | extend variant = "A", total_users = toscalar(variant_a_users | count())),
+  (customEvents
+    | extend user_id = tostring(customDimensions["user_id"])
+    | where user_id in (variant_b_users)
+    | where name == target_conversion
+    | summarize conversions = dcount(user_id)
+    | extend variant = "B", total_users = toscalar(variant_b_users | count()))
+| extend conversion_rate = round(100.0 * conversions / total_users, 2)
+| project variant, total_users, conversions, conversion_rate
+```
+
+### 사용자 이탈 예측 분석
+
+```kusto
+// 이탈 위험이 높은 사용자 식별
+let current_date = now();
+let activity_threshold_days = 7;  // 7일 이상 미활동시 위험
+let low_engagement_threshold = 5; // 총 이벤트 5회 미만
+
+let user_activity = union
+  (pageViews | extend user_id = tostring(customDimensions["user_id"])),
+  (customEvents | extend user_id = tostring(customDimensions["user_id"]))
+| where user_id != "N/A"
+| where timestamp > ago(30d);
+
+user_activity
+| summarize 
+    last_activity = max(timestamp),
+    first_activity = min(timestamp),
+    total_events = count(),
+    active_days = dcount(startofday(timestamp)),
+    page_views = countif(itemType == "pageView"),
+    custom_events = countif(itemType == "customEvent")
+  by user_id
+| extend 
+    days_since_last = datetime_diff('day', current_date, last_activity),
+    lifetime_days = datetime_diff('day', current_date, first_activity),
+    engagement_rate = round(100.0 * active_days / lifetime_days, 1)
+| extend churn_risk = case(
+    days_since_last >= 14 and total_events < 10, "High",
+    days_since_last >= 7 and engagement_rate < 20, "Medium",
+    days_since_last >= activity_threshold_days, "Low",
+    "Active"
+)
+| where churn_risk in ("High", "Medium")
+| project 
+    user_id,
+    last_activity,
+    days_since_last,
+    total_events,
+    active_days,
+    engagement_rate,
+    churn_risk
+| order by days_since_last desc
+```
+
+**활용 방법**:
+- **High Risk**: 즉시 재참여 캠페인 (이메일, 푸시 알림)
+- **Medium Risk**: 맞춤형 컨텐츠 추천
+- **Low Risk**: 정기적인 뉴스레터
+
+## 🛠️ 실습 4-6: 의존성 및 성능 분석
 
 ### 외부 API 호출 분석
 
@@ -1571,11 +2176,21 @@ dependencies
 | summarize 
     call_count = count(),
     avg_duration = avg(duration),
+    p50_duration = percentile(duration, 50),
     p90_duration = percentile(duration, 90),
-    success_rate = round(100.0 * countif(success == true) / count(), 2)
+    p99_duration = percentile(duration, 99),
+    success_rate = round(100.0 * countif(success == true) / count(), 2),
+    error_count = countif(success == false)
   by target, type
+| extend avg_duration_ms = round(avg_duration, 2)
 | order by call_count desc
 ```
+
+**성능 기준**:
+- p50 < 200ms: 우수
+- p90 < 500ms: 양호
+- p99 < 1000ms: 허용 가능
+- 그 이상: 최적화 필요
 
 ### Cosmos DB 쿼리 성능
 
@@ -1589,8 +2204,15 @@ dependencies
 | summarize 
     query_count = count(),
     avg_duration = avg(duration),
-    p90_duration = percentile(duration, 90)
+    p90_duration = percentile(duration, 90),
+    max_duration = max(duration)
   by operation, collection
+| extend efficiency_score = case(
+    avg_duration < 50, "Excellent",
+    avg_duration < 100, "Good",
+    avg_duration < 200, "Fair",
+    "Needs Optimization"
+)
 | order by avg_duration desc
 ```
 
@@ -1607,17 +2229,70 @@ union requests, dependencies
     name,
     duration,
     success,
-    resultCode
+    resultCode,
+    target = iif(itemType == "dependency", target, ""),
+    type = iif(itemType == "dependency", type, "")
+| extend sequence = row_number()
 | order by timestamp asc
 ```
 
-## 🛠️ 실습 4-6: 알림 및 대시보드 설정
+### API 엔드포인트별 의존성 매핑
 
-### 알림 규칙 생성
+```kusto
+// 엔드포인트가 호출하는 외부 서비스 분석
+requests
+| where timestamp > ago(24h)
+| join kind=inner (
+    dependencies
+    | where timestamp > ago(24h)
+) on operation_Id
+| summarize 
+    request_count = dcount(operation_Id),
+    avg_total_duration = avg(duration),
+    dependency_calls = count(),
+    unique_targets = make_set(target)
+  by request_name = name
+| extend deps_per_request = round(1.0 * dependency_calls / request_count, 2)
+| order by request_count desc
+```
 
-Azure Portal → Application Insights → Alerts → New alert rule
+## 🛠️ 실습 4-7: 알림 규칙 생성 및 관리
 
-**예시 1: 에러율 알림**
+### 💡 알림(Alert)이란?
+
+Azure Monitor 알림은 메트릭, 로그, 활동 로그에서 중요한 조건을 감지하고 자동으로 알림을 전송하는 기능입니다.
+
+**알림 구성 요소**:
+- 🎯 **Alert Rule**: 조건 및 임계값 정의
+- 📊 **Signal**: 모니터링할 데이터 소스 (메트릭, 로그 쿼리)
+- 🔔 **Action Group**: 알림 전송 방법 (이메일, SMS, 웹훅 등)
+- ⏱️ **Evaluation Frequency**: 조건 확인 주기
+
+---
+
+### 📋 알림 규칙 생성 단계별 가이드
+
+#### 1단계: Alert Rule 생성
+
+1. **Azure Portal** → **Application Insights** 리소스 선택
+2. 왼쪽 메뉴: **"Alerts"** 클릭
+3. 상단: **"+ Create"** → **"Alert rule"** 선택
+
+#### 2단계: Scope (범위) 설정
+
+- **Resource**: 현재 Application Insights 리소스 자동 선택
+- **Resource type**: `Application Insights`
+
+#### 3단계: Condition (조건) 설정
+
+**Signal 선택**:
+- **Logs**: KQL 쿼리 기반 알림 (권장)
+- **Metrics**: 메트릭 기반 알림 (간단한 조건)
+
+**Logs 쿼리 예시**:
+
+##### 예시 1: 에러율 알림 (5% 초과)
+
 ```kusto
 requests
 | where timestamp > ago(5m)
@@ -1625,43 +2300,924 @@ requests
     total = count(),
     errors = countif(success == false)
 | extend error_rate = 100.0 * errors / total
-| where error_rate > 5  // 5% 이상
+| where error_rate > 5
+| project error_rate, total, errors
 ```
 
-**예시 2: 응답 시간 알림**
+**조건 설정**:
+- **Measure**: `error_rate`
+- **Aggregation type**: `Maximum`
+- **Operator**: `Greater than`
+- **Threshold value**: `5`
+- **Frequency**: `5 minutes`
+- **Time range**: `5 minutes`
+
+##### 예시 2: 응답 시간 알림 (p95 > 2초)
+
 ```kusto
 requests
 | where timestamp > ago(5m)
 | summarize p95_duration = percentile(duration, 95)
-| where p95_duration > 2000  // 2초 이상
+| where p95_duration > 2000
+| project p95_duration
 ```
 
-### Workbook 생성
+**조건 설정**:
+- **Threshold value**: `2000` (밀리초)
+- **Frequency**: `5 minutes`
+
+##### 예시 3: 의존성 실패율 알림 (10% 초과)
+
+```kusto
+dependencies
+| where timestamp > ago(5m)
+| summarize 
+    total = count(),
+    failures = countif(success == false)
+| extend failure_rate = 100.0 * failures / total
+| where failure_rate > 10
+| project failure_rate, total, failures
+```
+
+##### 예시 4: 사용자 급감 알림 (전일 대비 20% 감소)
+
+```kusto
+let today = pageViews
+| where timestamp > ago(1d)
+| extend user_id = tostring(customDimensions["user_id"])
+| where user_id != "N/A"
+| dcount(user_id);
+
+let yesterday = pageViews
+| where timestamp between (ago(2d) .. ago(1d))
+| extend user_id = tostring(customDimensions["user_id"])
+| where user_id != "N/A"
+| dcount(user_id);
+
+print 
+    today_users = today,
+    yesterday_users = yesterday,
+    change_pct = round(100.0 * (today - yesterday) / yesterday, 1)
+| where change_pct < -20
+```
+
+##### 예시 5: AI Token 사용량 초과 알림
+
+```kusto
+// AI 모델 Token 사용량 모니터링
+traces
+| where timestamp > ago(5m)
+| where message contains "Token usage"
+| extend token_usage = extract(@"Token usage: (\d+)", 1, message)
+| extend tokens = toint(token_usage)
+| summarize total_tokens = sum(tokens)
+| where total_tokens > 100000  // 5분간 10만 토큰 초과
+| project total_tokens
+```
+
+**사용 사례**: OpenAI API 호출 시 비용 관리
+
+##### 예시 6: 예외 급증 알림
+
+```kusto
+exceptions
+| where timestamp > ago(5m)
+| summarize exception_count = count()
+| where exception_count > 50
+| project exception_count
+```
+
+#### 4단계: Action Group (액션 그룹) 설정
+
+**액션 그룹 생성**:
+
+1. **"+ Create action group"** 클릭
+2. **기본 정보**:
+   - **Subscription**: 본인 구독
+   - **Resource group**: `rg-sk-appinsights`
+   - **Action group name**: `ag-critical-alerts`
+   - **Display name**: `Critical Alerts`
+
+3. **Notifications (알림 설정)**:
+
+   | Type | Name | Details |
+   |------|------|---------|
+   | Email/SMS/Push/Voice | Email Admin | admin@example.com |
+   | Email/SMS/Push/Voice | SMS OnCall | +82-10-1234-5678 |
+
+4. **Actions (추가 액션)**:
+
+   | Action Type | Name | Configuration |
+   |-------------|------|---------------|
+   | Webhook | Slack Webhook | https://hooks.slack.com/services/... |
+   | Azure Function | Alert Processor | Function App URL |
+   | Logic App | Create Incident | Logic App 선택 |
+   | ITSM | ServiceNow Ticket | ITSM 연결 |
+
+**Slack 웹훅 예시**:
+```json
+{
+  "text": "🚨 Application Insights Alert",
+  "attachments": [
+    {
+      "color": "danger",
+      "fields": [
+        {
+          "title": "Alert Name",
+          "value": "#alertrulename",
+          "short": true
+        },
+        {
+          "title": "Severity",
+          "value": "#severity",
+          "short": true
+        },
+        {
+          "title": "Threshold",
+          "value": "#threshold",
+          "short": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### 5단계: Alert Rule Details (세부 정보)
+
+- **Alert rule name**: `High Error Rate - Production`
+- **Description**: `에러율이 5%를 초과했을 때 알림`
+- **Severity**: 
+  - `Sev 0 - Critical`: 서비스 중단
+  - `Sev 1 - Error`: 주요 기능 장애
+  - `Sev 2 - Warning`: 성능 저하
+  - `Sev 3 - Informational`: 정보성 알림
+- **Enable upon creation**: ✅ 체크
+- **Automatically resolve alerts**: ✅ 체크 (조건 해소 시 자동 해결)
+
+#### 6단계: Review + Create
+
+- 설정 검토 후 **"Create"** 클릭
+
+---
+
+### 📊 알림 규칙 모범 사례
+
+#### ✅ DO (권장)
+
+1. **적절한 임계값 설정**:
+   - 과거 데이터 분석 후 결정
+   - 너무 민감하면 알림 피로도 증가
+
+2. **평가 주기 최적화**:
+   - Critical: 1-5분
+   - Warning: 5-15분
+   - Informational: 15-30분
+
+3. **Severity 분류**:
+   - 중요도에 따라 명확히 구분
+   - 각 Severity별 다른 Action Group 설정
+
+4. **알림 메시지 명확화**:
+   ```kusto
+   | extend alert_message = strcat(
+       "Error rate: ", error_rate, "% ",
+       "(", errors, "/", total, " requests)"
+   )
+   ```
+
+5. **비즈니스 시간 고려**:
+   - 중요도 낮은 알림은 업무 시간에만 전송
+   - Logic App으로 조건부 라우팅
+
+#### ❌ DON'T (지양)
+
+1. **너무 많은 알림**: 알림 피로도(Alert Fatigue)
+2. **너무 긴 평가 주기**: 문제 발견 지연
+3. **불명확한 메시지**: 원인 파악 어려움
+4. **단일 채널**: 이메일만 또는 SMS만
+5. **테스트 없이 배포**: 프로덕션 배포 전 테스트
+
+---
+
+### 🔧 고급 알림 시나리오
+
+#### 시나리오 1: 다단계 알림 (Escalation)
+
+```kusto
+// 1단계: Warning (5분간 에러율 > 5%)
+// 2단계: Error (10분간 에러율 > 5%)
+// 3단계: Critical (15분간 에러율 > 10%)
+
+requests
+| where timestamp > ago(15m)
+| summarize 
+    error_rate = 100.0 * countif(success == false) / count(),
+    duration = datetime_diff('minute', max(timestamp), min(timestamp))
+| extend severity = case(
+    error_rate > 10 and duration >= 15, "Critical",
+    error_rate > 5 and duration >= 10, "Error",
+    error_rate > 5 and duration >= 5, "Warning",
+    "OK"
+)
+| where severity != "OK"
+```
+
+#### 시나리오 2: 복합 조건 알림
+
+```kusto
+// 에러율 높음 AND 트래픽 정상 (실제 문제)
+let error_threshold = 5.0;
+let traffic_threshold = 100;
+
+requests
+| where timestamp > ago(5m)
+| summarize 
+    total_requests = count(),
+    error_rate = 100.0 * countif(success == false) / count()
+| where error_rate > error_threshold and total_requests > traffic_threshold
+```
+
+#### 시나리오 3: AI Token 비용 알림 (실전 예시)
+
+```kusto
+// OpenAI API 호출 시 Token 사용량 추적
+customMetrics
+| where name == "ai.tokens.total"
+| where timestamp > ago(1h)
+| summarize 
+    total_tokens = sum(value),
+    total_requests = count()
+| extend 
+    avg_tokens_per_request = total_tokens / total_requests,
+    estimated_cost_usd = total_tokens / 1000 * 0.002  // GPT-4 가격 예시
+| where estimated_cost_usd > 10  // 시간당 $10 초과
+| project total_tokens, total_requests, avg_tokens_per_request, estimated_cost_usd
+```
+
+**Action**: 비용 초과 시 개발팀 이메일 + Slack 알림
+
+---
+
+### 📧 알림 테스트 및 검증
+
+#### 알림 테스트 방법
+
+1. **수동 테스트**:
+   - Alert rule → **"Test"** 버튼 클릭
+   - 과거 데이터로 시뮬레이션
+
+2. **실제 트리거**:
+   ```bash
+   # 의도적으로 에러 발생
+   for i in {1..100}; do
+     curl http://your-app/api/error
+   done
+   ```
+
+3. **알림 히스토리 확인**:
+   - Alerts → **"Alert History"**
+   - Fired alerts, Resolved alerts 확인
+
+---
+
+### 🔔 알림 관리 및 모니터링
+
+#### Alert Dashboard 생성
+
+```kusto
+// 알림 발생 현황
+AzureActivity
+| where CategoryValue == "Alert"
+| where TimeGenerated > ago(7d)
+| summarize alert_count = count() by bin(TimeGenerated, 1h), AlertRuleName
+| render timechart
+```
+
+#### Alert 통계
+
+```kusto
+AzureActivity
+| where CategoryValue == "Alert"
+| where TimeGenerated > ago(30d)
+| summarize 
+    total_alerts = count(),
+    critical_alerts = countif(Severity == "Critical"),
+    avg_alerts_per_day = count() / 30
+  by AlertRuleName
+| order by total_alerts desc
+```
+
+---
+
+### ✅ 알림 실습 과제
+
+1. **필수 알림 3종 세트 구성**:
+   - 에러율 > 5% (Critical)
+   - 응답 시간 p95 > 2초 (Warning)
+   - 의존성 실패율 > 10% (Error)
+
+2. **AI Token 사용량 모니터링**:
+   - 시간당 Token 사용량 추적
+   - 일일 비용 예측 알림
+   - 임계값 초과 시 Slack 알림
+
+3. **사용자 행동 알림**:
+   - 활성 사용자 20% 감소
+   - 전환율 50% 하락
+   - 신규 가입자 0명 (24시간)
+
+4. **다단계 Escalation 구성**:
+   - 1단계: 이메일 (Warning)
+   - 2단계: SMS + 이메일 (Error)
+   - 3단계: 전화 + SMS + 이메일 (Critical)
+
+---
+
+### Workbook 생성 - 사용자 행동 대시보드
 
 Azure Portal → Application Insights → Workbooks → New
 
-**대시보드 구성**:
-1. **개요 섹션**: 전체 요청 수, 에러율, 평균 응답 시간
-2. **성능 섹션**: 시간대별 트렌드, 엔드포인트별 성능
-3. **사용자 섹션**: 페이지 뷰, 이벤트, 코호트 분석
-4. **에러 섹션**: 예외 트렌드, TOP 에러 목록
+<div class="info" data-title="📘 Workbook이란?">
+
+> **Azure Workbook**은 대화형 리포트 및 대시보드를 만들 수 있는 캔버스입니다. KQL 쿼리, 텍스트, 매개변수, 메트릭을 결합하여 풍부한 시각적 환경을 제공합니다.
+
+</div>
+
+#### 🛠️ Workbook 생성 단계별 가이드
+
+**1단계: 새 Workbook 만들기**
+
+1. Azure Portal → Application Insights 리소스 선택
+2. 왼쪽 메뉴: **"Workbooks"** 클릭
+3. 상단: **"+ New"** 버튼 클릭
+4. 빈 템플릿 또는 샘플 템플릿 선택
+
+**2단계: 편집 모드 진입**
+
+- 상단 툴바에서 **"Edit"** 버튼 클릭
+- **"+ Add"** 드롭다운에서 추가할 항목 선택:
+  - **Add text**: 마크다운 텍스트 추가
+  - **Add parameters**: 동적 필터 파라미터
+  - **Add query**: KQL 쿼리 기반 차트
+  - **Add metric**: Azure Monitor 메트릭
+  - **Add group**: 섹션 그룹화
+
+**3단계: 쿼리 블록 추가**
+
+각 섹션마다 **"Add query"**를 클릭하고 다음 설정:
+
+**쿼리 설정**:
+- **Data source**: `Logs`
+- **Resource type**: `Application Insights`
+- **Log Analytics workspace**: 본인의 workspace 선택
+- **Time Range**: `Last 24 hours` (또는 파라미터 사용)
+
+**시각화 옵션**:
+- **Visualization**: `Chart`, `Table`, `Tiles`, `Grid` 등 선택
+- **Chart type**: `Line chart`, `Bar chart`, `Pie chart` 등
+- **Size**: `Small`, `Medium`, `Large`, `Full`
+
+**4단계: 파라미터로 동적 필터 추가**
+
+```markdown
+1. "Add parameters" 클릭
+2. "Add Parameter" 버튼 클릭
+3. 설정:
+   - Parameter name: `TimeRange`
+   - Parameter type: `Time range picker`
+   - Required: ✅
+   - Default value: `Last 24 hours`
+4. "Save" 클릭
+```
+
+쿼리에서 파라미터 사용:
+```kusto
+requests
+| where timestamp {TimeRange}  // 파라미터 적용
+| summarize count() by bin(timestamp, 1h)
+```
+
+**5단계: 저장 및 공유**
+
+1. 상단 **"Done Editing"** 클릭
+2. **"Save"** 버튼 클릭
+3. 저장 정보 입력:
+   - **Title**: `사용자 행동 분석 대시보드`
+   - **Subscription**: 본인 구독
+   - **Resource group**: `rg-sk-appinsights`
+   - **Location**: `Korea Central`
+4. **"Apply"** 클릭
+
+**6단계: 공유 및 권한 설정**
+
+- **Share** 버튼: URL 링크 생성
+- **Publish**: 팀원과 공유 가능한 공개 Workbook으로 게시
+- **Pin to dashboard**: Azure Dashboard에 고정
+
+---
+
+#### 📊 실전 Workbook 템플릿
+
+**대시보드 구성 예시**:
+
+##### 1️⃣ **개요 섹션** (텍스트 + 타일)
+
+**텍스트 블록** (Add text):
+```markdown
+# 📊 사용자 행동 분석 대시보드
+
+실시간 사용자 활동, 성능 지표, 코호트 분석을 한눈에 확인하세요.
+
+---
+```
+
+**KPI 타일** (Add query → Visualization: `Tiles`):
+```kusto
+let timeRange = ago(24h);
+union
+  (requests | where timestamp > timeRange),
+  (pageViews | where timestamp > timeRange),
+  (customEvents | where timestamp > timeRange)
+| summarize 
+    total_requests = countif(itemType == "request"),
+    total_page_views = countif(itemType == "pageView"),
+    total_events = countif(itemType == "customEvent"),
+    unique_users = dcountif(user_Id, user_Id != "")
+| extend 
+    requests_per_user = round(1.0 * total_requests / unique_users, 1),
+    pages_per_user = round(1.0 * total_page_views / unique_users, 1),
+    events_per_user = round(1.0 * total_events / unique_users, 1)
+```
+
+**타일 설정**:
+- **Visualization**: `Tiles`
+- **Tile Settings**:
+  - Left tile: `total_requests` (제목: "총 요청 수")
+  - Title tile: `unique_users` (제목: "고유 사용자")
+  - Right tile: `pages_per_user` (제목: "사용자당 페이지뷰")
+
+##### 2️⃣ **성능 섹션** (시계열 차트)
+
+**Add query** → Visualization: `Line chart`:
+```kusto
+requests
+| where timestamp > ago(7d)
+| summarize 
+    request_count = count(),
+    avg_duration = avg(duration),
+    error_count = countif(success == false)
+  by bin(timestamp, 1h)
+| extend error_rate = round(100.0 * error_count / request_count, 2)
+| render timechart
+```
+
+**차트 설정**:
+- **Y축**: `request_count`, `avg_duration`, `error_rate` (다중 축)
+- **X축**: `timestamp`
+- **범례**: 하단 표시
+
+##### 3️⃣ **사용자 행동 섹션** (히트맵)
+
+**Add query** → Visualization: `Grid`:
+```kusto
+pageViews
+| where timestamp > ago(7d)
+| extend 
+    hour = hourofday(timestamp),
+    day = case(
+        dayofweek(timestamp) == 0d, "일",
+        dayofweek(timestamp) == 1d, "월",
+        dayofweek(timestamp) == 2d, "화",
+        dayofweek(timestamp) == 3d, "수",
+        dayofweek(timestamp) == 4d, "목",
+        dayofweek(timestamp) == 5d, "금",
+        "토"
+    )
+| summarize page_views = count() by hour, day
+| evaluate pivot(day, sum(page_views))
+```
+
+**Grid 설정**:
+- **Column Settings**: 각 요일별 색상 그라데이션 적용
+- **Heatmap**: 활성화 (낮음: 파랑, 높음: 빨강)
+
+##### 4️⃣ **코호트 분석 섹션** (라인 차트)
+
+**Add query** → Visualization: `Line chart`:
+
+
+```kusto
+// KPI 요약
+let timeRange = ago(24h);
+union
+  (requests | where timestamp > timeRange),
+  (pageViews | where timestamp > timeRange),
+  (customEvents | where timestamp > timeRange)
+| summarize 
+    total_requests = countif(itemType == "request"),
+    total_page_views = countif(itemType == "pageView"),
+    total_events = countif(itemType == "customEvent"),
+    unique_users = dcountif(user_Id, user_Id != "")
+| extend 
+    requests_per_user = round(1.0 * total_requests / unique_users, 1),
+    pages_per_user = round(1.0 * total_page_views / unique_users, 1),
+    events_per_user = round(1.0 * total_events / unique_users, 1)
+```
+
+#### 2️⃣ **성능 섹션**
+```kusto
+// 시간대별 트렌드
+requests
+| where timestamp > ago(7d)
+| summarize 
+    request_count = count(),
+    avg_duration = avg(duration),
+    error_count = countif(success == false)
+  by bin(timestamp, 1h)
+| extend error_rate = round(100.0 * error_count / request_count, 2)
+| render timechart
+```
+
+#### 3️⃣ **사용자 행동 섹션**
+```kusto
+// 페이지별 참여도 (히트맵)
+pageViews
+| where timestamp > ago(7d)
+| extend 
+    hour = hourofday(timestamp),
+    day = dayofweek(timestamp) / 1d
+| summarize page_views = count() by hour, day
+| render columnchart
+```
+
+#### 4️⃣ **코호트 분석 섹션**
+```kusto
+// 유지율 차트
+let users_by_day = pageViews
+| extend user_id = tostring(customDimensions["user_id"])
+| where user_id != "N/A"
+| where timestamp > ago(30d)
+| extend day = startofday(timestamp)
+| summarize by user_id, day;
+
+let first_day = users_by_day
+| summarize first_day = min(day) by user_id;
+
+users_by_day
+| join kind=inner first_day on user_id
+| extend days_since_first = datetime_diff('day', day, first_day)
+| where days_since_first <= 30
+| summarize user_count = dcount(user_id) by days_since_first
+| order by days_since_first asc
+| extend retention_pct = round(100.0 * user_count / first(user_count), 1)
+| project days_since_first, retention_pct
+```
+
+**차트 설정**:
+- **Y축**: `retention_pct` (단위: %)
+- **X축**: `days_since_first` (Day 0, 1, 2, ... 30)
+- **차트 타입**: Area chart
+
+##### 5️⃣ **RFM 세그먼트 분포** (파이 차트)
+
+**Add query** → Visualization: `Pie chart`:
+```kusto
+// 사용자 세그먼트 파이 차트
+let current_date = now();
+let user_activity = union
+  (pageViews | extend user_id = tostring(customDimensions["user_id"])),
+  (customEvents | extend user_id = tostring(customDimensions["user_id"]))
+| where user_id != "N/A"
+| where timestamp > ago(30d);
+
+user_activity
+| summarize 
+    last_activity = max(timestamp),
+    total_events = count(),
+    distinct_days = dcount(startofday(timestamp))
+  by user_id
+| extend 
+    recency_days = datetime_diff('day', current_date, last_activity),
+    recency_score = case(recency_days <= 1, 5, recency_days <= 3, 4, recency_days <= 7, 3, recency_days <= 14, 2, 1),
+    frequency_tier = case(total_events >= 100, 5, total_events >= 50, 4, total_events >= 20, 3, total_events >= 10, 2, 1),
+    engagement_tier = case(distinct_days >= 20, 5, distinct_days >= 10, 4, distinct_days >= 5, 3, distinct_days >= 2, 2, 1)
+| extend rfm_score = recency_score + frequency_tier + engagement_tier
+| extend user_segment = case(
+    rfm_score >= 13, "Champions",
+    rfm_score >= 11, "Loyal Customers",
+    rfm_score >= 9, "Potential Loyalists",
+    rfm_score >= 7, "Recent Users",
+    rfm_score >= 5, "At Risk",
+    "Lost"
+)
+| summarize user_count = count() by user_segment
+```
+
+**파이 차트 설정**:
+- **Value**: `user_count`
+- **Category**: `user_segment`
+- **범례 위치**: 오른쪽
+
+---
+
+#### 💡 Workbook 고급 기능
+
+**1. 조건부 포맷팅**
+
+```markdown
+Column Settings에서:
+- error_rate > 5 → 빨간색
+- error_rate > 2 → 주황색
+- error_rate <= 2 → 녹색
+```
+
+**2. 드릴다운 (클릭 상세보기)**
+
+```markdown
+Grid Settings → Make items exportable
+또는
+Tile Settings → Click action → Run query (상세 쿼리 실행)
+```
+
+**3. 링크 추가**
+
+```kusto
+requests
+| extend detail_link = strcat("https://portal.azure.com/#@/resource", 
+    "/subscriptions/.../providers/Microsoft.Insights/components/...")
+```
+
+**4. 템플릿 변수 활용**
+
+```markdown
+파라미터:
+- {Subscription:subscriptions}
+- {Workspace:workspaces}
+- {TimeRange:timerange}
+- {UserSegment:value} (custom)
+```
+
+**5. 자동 새로고침**
+
+```markdown
+Workbook 설정:
+- Auto refresh: On
+- Refresh interval: 5분
+```
+
+---
+
+#### 📥 Workbook 내보내기 및 버전 관리
+
+**JSON으로 내보내기**:
+1. Workbook 편집 모드
+2. 상단 **"Advanced Editor"** (</> 아이콘) 클릭
+3. JSON 코드 복사
+4. Git 저장소에 저장 (버전 관리)
+
+**템플릿 재사용**:
+```json
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 대시보드 제목"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests | summarize count()"
+      }
+    }
+  ]
+}
+```
+
+**GitHub에서 배포**:
+```bash
+# 워크북 JSON 파일 저장
+git add azure-workbook.json
+git commit -m "Add user behavior workbook"
+git push
+
+# Azure Portal에서 Import
+Workbooks → Gallery → Upload
+```
+
+---
+
+#### ✅ Workbook 실습 과제
+
+1. **나만의 대시보드 만들기**:
+   - 5개 섹션 구성 (개요, 성능, 사용자, 코호트, 에러)
+   - 파라미터로 시간 범위 필터 추가
+   - 타일, 차트, 그리드 각각 1개 이상 사용
+
+2. **드릴다운 기능 구현**:
+   - 세그먼트 클릭 → 해당 사용자 목록 표시
+   - 에러 타일 클릭 → 상세 에러 로그 표시
+
+3. **알림 연동**:
+   - Workbook에서 이상 징후 발견 시
+   - 알림 규칙 생성 링크 추가
+
+---
+
+### 자동화된 리포트 생성
+
+**주간 리포트 쿼리**:
+```kusto
+// 지난 주 성과 요약
+let this_week = ago(7d);
+let last_week = ago(14d);
+
+let this_week_metrics = requests
+| where timestamp > this_week
+| summarize 
+    requests = count(),
+    avg_duration = avg(duration),
+    errors = countif(success == false);
+
+let last_week_metrics = requests
+| where timestamp between (last_week .. this_week)
+| summarize 
+    requests = count(),
+    avg_duration = avg(duration),
+    errors = countif(success == false);
+
+union
+  (this_week_metrics | extend period = "This Week"),
+  (last_week_metrics | extend period = "Last Week")
+| extend 
+    error_rate = round(100.0 * errors / requests, 2),
+    avg_duration_ms = round(avg_duration, 2)
+| project period, requests, avg_duration_ms, errors, error_rate
+```
+
+**사용자 성장 리포트**:
+```kusto
+// 신규 vs 재방문 사용자
+let period = 30d;
+let all_users = pageViews
+| where timestamp > ago(period)
+| extend user_id = tostring(customDimensions["user_id"])
+| where user_id != "N/A";
+
+let first_seen = all_users
+| summarize first_seen = min(timestamp) by user_id;
+
+all_users
+| join kind=inner first_seen on user_id
+| extend days_since_first = datetime_diff('day', timestamp, first_seen)
+| extend user_type = iif(days_since_first == 0, "New", "Returning")
+| summarize user_count = dcount(user_id) by bin(timestamp, 1d), user_type
+| render columnchart
+```
 
 ## ✅ 실습 과제
 
-1. **커스텀 대시보드 생성**:
-   - 비즈니스 KPI 표시
-   - 실시간 성능 모니터링
-   - 사용자 행동 인사이트
+### 과제 1: 개인화된 사용자 대시보드
 
-2. **알림 규칙 설정**:
-   - 에러율 5% 초과 시
-   - p95 응답 시간 2초 초과 시
-   - 의존성 실패율 10% 초과 시
+**목표**: 각 사용자 세그먼트별 맞춤 분석 대시보드 생성
 
-3. **주간 리포트 쿼리 작성**:
-   - 전주 대비 트래픽 변화
-   - 신규 사용자 vs 재방문 사용자
-   - 가장 많이 발생한 에러
+1. **Champions 세그먼트 분석**:
+   ```kusto
+   // 최고 등급 사용자의 행동 패턴
+   // - 가장 많이 사용하는 기능
+   // - 평균 세션 시간
+   // - 선호하는 사용 시간대
+   ```
+
+2. **At Risk 사용자 재참여 전략**:
+   ```kusto
+   // 이탈 위험 사용자 식별 후
+   // - 마지막 활동 시간
+   // - 과거 선호 기능
+   // - 재참여 유도 메시지 타겟팅
+   ```
+
+### 과제 2: 전환 퍼널 최적화
+
+**목표**: 사용자 여정의 병목 지점 찾기
+
+1. **단계별 이탈률 계산**:
+   ```kusto
+   // Landing → Dashboard → ETF List → Chat → Conversion
+   // 각 단계에서 몇 %가 이탈하는가?
+   ```
+
+2. **이탈 원인 분석**:
+   - 특정 단계에서 오래 머무르는가?
+   - 에러가 발생하는가?
+   - 특정 사용자 그룹에서 이탈률이 높은가?
+
+### 과제 3: 커스텀 코호트 분석
+
+**목표**: 월간 코호트 유지율 히트맵 생성
+
+1. **월간 코호트 매트릭스**:
+   ```kusto
+   // 각 월별 신규 사용자 그룹이
+   // 이후 각 월에 얼마나 돌아오는지 분석
+   ```
+
+2. **시각화**:
+   ```
+   Cohort    | Month 0 | Month 1 | Month 2 | Month 3
+   ----------|---------|---------|---------|--------
+   2024-08   | 100%    | 45%     | 32%     | 28%
+   2024-09   | 100%    | 52%     | 38%     | -
+   2024-10   | 100%    | 48%     | -       | -
+   ```
+
+### 과제 4: 기능 사용 히트맵
+
+**목표**: 요일/시간대별 기능 사용 패턴 시각화
+
+```kusto
+// 각 기능이 언제 가장 많이 사용되는지
+// 히트맵으로 시각화하여 서버 리소스 최적화
+```
+
+### 과제 5: 예측 분석 모델
+
+**목표**: 사용자 이탈 예측 모델 구축
+
+1. **특징(Feature) 추출**:
+   - 최근 활동 일수
+   - 총 이벤트 수
+   - 세션 빈도
+   - 페이지 뷰 수
+   - 기능 사용 다양성
+
+2. **위험 스코어 계산**:
+   ```kusto
+   // 각 특징에 가중치를 부여하여
+   // 0-100 점수로 이탈 위험도 계산
+   ```
+
+3. **액션 플랜**:
+   - 고위험 사용자: 즉시 개입
+   - 중위험 사용자: 맞춤 컨텐츠 제공
+   - 저위험 사용자: 정기 업데이트
+
+### 과제 6: A/B 테스트 설계
+
+**목표**: 새로운 기능의 효과 측정
+
+1. **테스트 설계**:
+   - 그룹 A: 기존 UI
+   - 그룹 B: 새로운 UI
+
+2. **측정 지표**:
+   - 전환율 (Conversion Rate)
+   - 클릭률 (CTR)
+   - 사용 시간
+   - 만족도 (간접 지표)
+
+3. **통계적 유의성 검증**:
+   ```kusto
+   // 두 그룹 간 차이가 통계적으로 유의한가?
+   // (샘플 크기, p-value 고려)
+   ```
+
+### 과제 7: 실시간 알림 시스템
+
+**목표**: 비즈니스 크리티컬 이벤트 실시간 알림
+
+1. **알림 규칙 설정**:
+   - 신규 가입자 급증 (평소 대비 200% 이상)
+   - 특정 기능 사용률 급락 (전일 대비 50% 이하)
+   - 에러율 급증 (5% 초과)
+   - 서버 응답 시간 증가 (p95 > 2초)
+
+2. **알림 채널**:
+   - 이메일
+   - Teams/Slack 웹훅
+   - SMS (긴급 상황)
+
+### 보너스 과제: 머신러닝 통합
+
+**목표**: Application Insights 데이터를 Azure ML과 연동
+
+1. **데이터 내보내기**:
+   ```kusto
+   // Application Insights → Log Analytics → Azure ML
+   ```
+
+2. **예측 모델 학습**:
+   - 사용자 이탈 예측
+   - 다음 행동 예측
+   - 이상 징후 탐지
+
+3. **결과 피드백**:
+   - 예측 결과를 다시 Application Insights로
+   - customMetrics로 저장하여 모니터링
 
 ## 📚 핵심 정리
 
@@ -1670,11 +3226,78 @@ Azure Portal → Application Insights → Workbooks → New
 - 실시간 인사이트 도출
 - 자동화된 알림 설정
 
-✅ **분석 영역**:
-- 성능 모니터링
-- 에러 추적
-- 사용자 행동 분석
-- 코호트 및 유지율
+✅ **사용자 행동 분석**:
+- **코호트 분석**: 시간 경과에 따른 사용자 그룹 추적
+- **유지율(Retention)**: Day 1, Day 7, Day 30 재방문률
+- **RFM 분석**: 사용자를 Champions, Loyal, At Risk 등으로 세분화
+- **전환 퍼널**: 사용자 여정의 병목 지점 식별
+
+✅ **고급 분석 기법**:
+- **세션 분석**: 평균 세션 시간, 바운스율
+- **세그먼트 분석**: 사용자 그룹별 행동 패턴
+- **이탈 예측**: 위험 사용자 조기 식별
+- **A/B 테스트**: 기능 개선 효과 측정
+
+✅ **운영 자동화**:
+- **실시간 알림**: 비즈니스 크리티컬 이벤트 감지
+- **커스텀 대시보드**: Workbook으로 시각화
+- **정기 리포트**: 주간/월간 성과 분석
+
+### 🎯 분석 프레임워크
+
+#### 1단계: 데이터 수집
+- ✅ 자동 계측 (requests, dependencies, traces)
+- ✅ 수동 추적 (pageViews, customEvents)
+- ✅ 사용자 ID 및 세션 관리
+
+#### 2단계: 기본 분석
+- ✅ 성능 메트릭 (응답 시간, 에러율)
+- ✅ 사용량 메트릭 (요청 수, 사용자 수)
+- ✅ 가용성 모니터링
+
+#### 3단계: 사용자 인사이트
+- ✅ 페이지별 참여도
+- ✅ 기능 사용 패턴
+- ✅ 사용자 여정 분석
+
+#### 4단계: 코호트 및 세그먼트
+- ✅ 유지율 추적
+- ✅ RFM 세그먼테이션
+- ✅ 이탈 위험 예측
+
+#### 5단계: 액션 및 최적화
+- ✅ 자동 알림
+- ✅ 대시보드 공유
+- ✅ 데이터 기반 의사결정
+
+### 💡 모범 사례
+
+**DO** ✅:
+- 비즈니스 KPI와 연결된 메트릭 추적
+- 사용자 ID로 개인화된 분석
+- 정기적인 코호트 분석으로 유지율 모니터링
+- 세그먼트별 맞춤 전략 수립
+- 알림을 통한 즉각적인 대응
+
+**DON'T** ❌:
+- 너무 많은 메트릭으로 복잡도 증가
+- 사용자 개인정보 과도하게 수집
+- 알림 피로도(Alert Fatigue) 유발
+- 데이터만 보고 액션 없음
+- 일회성 분석으로 끝
+
+### 📊 성공 지표 예시
+
+| 지표 | 목표 | 측정 방법 |
+|------|------|-----------|
+| **Day 1 Retention** | > 40% | 신규 사용자 중 다음 날 재방문 |
+| **Day 7 Retention** | > 20% | 첫 주 후 재방문률 |
+| **Day 30 Retention** | > 10% | 첫 달 후 유지율 |
+| **전환율** | > 15% | 방문자 중 핵심 액션 완료 |
+| **세션 시간** | > 5분 | 평균 세션 체류 시간 |
+| **바운스율** | < 50% | 한 페이지만 보고 이탈 |
+| **Champions 비율** | > 15% | 전체 사용자 중 최고 등급 |
+| **At Risk 전환** | > 30% | 위험 사용자의 재참여 성공률 |
 
 ---
 
