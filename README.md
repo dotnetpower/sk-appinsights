@@ -15,6 +15,8 @@ ETF 및 주식 종목 데이터 분석 에이전트 프로젝트, 주식 데이�
 
 ![alt text](docs/assets/etf-agent.png)
 
+![alt text](docs/assets/aichat.png)
+
 [실습](https://moaw.dev/workshop/gh:dotnetpower/sk-appinsights/main/docs/?step=0)
 
 ## 프로젝트 구조
