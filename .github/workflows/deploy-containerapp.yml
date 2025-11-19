@@ -169,15 +169,25 @@ jobs:
         echo "=========================================="
         echo "🚀 배포 완료!"
         echo "=========================================="
-        echo "📍 App URL: https://$APP_URL"
-        echo "📍 Health: https://$APP_URL/health"
-        echo "📍 API Docs: https://$APP_URL/docs"
+        echo "🌐 Frontend URL: https://$APP_URL"
+        echo "🔧 Backend API URL: https://$APP_URL/api"
+        echo "💚 Health Check: https://$APP_URL/health"
+        echo "📚 API Docs: https://$APP_URL/docs"
         echo "=========================================="
         
         # GitHub Step Summary에 추가
         echo "## 🎉 배포 성공!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- 🌐 **App URL**: https://$APP_URL" >> $GITHUB_STEP_SUMMARY
-        echo "- 💚 **Health Check**: https://$APP_URL/health" >> $GITHUB_STEP_SUMMARY
-        echo "- 📚 **API Docs**: https://$APP_URL/docs" >> $GITHUB_STEP_SUMMARY
-        echo "- 🏷️ **Image Tag**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 접속 URL" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| 서비스 | URL |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-----|" >> $GITHUB_STEP_SUMMARY
+        echo "| **Frontend** | https://$APP_URL |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Backend API** | https://$APP_URL/api |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Health Check** | https://$APP_URL/health |" >> $GITHUB_STEP_SUMMARY
+        echo "| **API Docs** | https://$APP_URL/docs |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 배포 정보" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- 🏷️ **Image Tag**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- 📅 **배포 시간**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
