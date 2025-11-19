@@ -1,7 +1,15 @@
 # ETF Agent
 
 [![Deploy to Azure Container App](https://github.com/dotnetpower/sk-appinsights/actions/workflows/deploy-containerapp.yml/badge.svg)](https://github.com/dotnetpower/sk-appinsights/actions/workflows/deploy-containerapp.yml)
-[![CI](https://github.com/dotnetpower/sk-appinsights/actions/workflows/ci.yml/badge.svg)](https://github.com/dotnetpower/sk-appinsights/actions/workflows/ci.yml)
+[![CI - Build and Test](https://github.com/dotnetpower/sk-appinsights/actions/workflows/ci.yml/badge.svg)](https://github.com/dotnetpower/sk-appinsights/actions/workflows/ci.yml)
+[![Python Version](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+[![Node Version](https://img.shields.io/badge/node-22-green.svg)](https://nodejs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-19.2-61DAFB.svg?logo=react)](https://reactjs.org/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Azure](https://img.shields.io/badge/Azure-Container%20App-0089D6?logo=microsoft-azure)](https://azure.microsoft.com/en-us/services/container-apps/)
+[![Application Insights](https://img.shields.io/badge/Monitoring-Application%20Insights-0089D6)](https://azure.microsoft.com/en-us/services/monitor/)
+[![Cosmos DB](https://img.shields.io/badge/Database-Cosmos%20DB-0089D6)](https://azure.microsoft.com/en-us/services/cosmos-db/)
 
 ETF 및 주식 종목 데이터 분석 에이전트 프로젝트, 주식 데이터는 실제 데이터이지만 Application Insights 의 모니터링 기능 시연을 위한 예제입니다.
 
