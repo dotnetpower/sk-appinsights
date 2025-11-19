@@ -81,4 +81,23 @@ export const chatApi = {
   reset: () => api.post("/api/chat/reset"),
 };
 
+// Analytics API
+export const analyticsApi = {
+  trackPageView: (data: {
+    page_name: string;
+    duration_ms?: number;
+    user_id?: string;
+    session_id?: string;
+    metadata?: Record<string, any>;
+  }) => api.post("/api/analytics/page-view", data),
+
+  trackEvent: (data: {
+    event_name: string;
+    event_category: string;
+    user_id?: string;
+    session_id?: string;
+    properties?: Record<string, any>;
+  }) => api.post("/api/analytics/event", data),
+};
+
 export default api;

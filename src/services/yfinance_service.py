@@ -355,7 +355,7 @@ class YFinanceClient:
                             publish_time = int(datetime.now(timezone.utc).timestamp())
                         
                         # 썸네일 URL 추출
-                        thumbnail = content.get('thumbnail', {})
+                        thumbnail = content.get('thumbnail') or {}
                         resolutions = thumbnail.get('resolutions', [])
                         image_url = ''
                         if resolutions:

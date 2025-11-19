@@ -1,25 +1,36 @@
-import React, { useState } from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Container, Box, AppBar, Toolbar, Typography, Tab, Tabs } from '@mui/material';
-import Dashboard from './components/Dashboard';
-import ETFList from './components/ETFList';
-import StockDetail from './components/StockDetail';
-import NewsFeed from './components/NewsFeed';
-import ChatInterface from './components/ChatInterface';
-import './App.css';
+import React, { useState } from "react";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import {
+  CssBaseline,
+  Container,
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  Tab,
+  Tabs,
+} from "@mui/material";
+import Dashboard from "./components/Dashboard";
+import ETFList from "./components/ETFList";
+import StockDetail from "./components/StockDetail";
+import NewsFeed from "./components/NewsFeed";
+import ChatInterface from "./components/ChatInterface";
+import { usePageTracking, getUserId } from "./hooks/usePageTracking";
+import { trackEvent } from "./services/analytics";
+import "./App.css";
 
 const theme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: "dark",
     primary: {
-      main: '#1976d2',
+      main: "#1976d2",
     },
     secondary: {
-      main: '#dc004e',
+      main: "#dc004e",
     },
     background: {
-      default: '#0a1929',
-      paper: '#1a2332',
+      default: "#0a1929",
+      paper: "#1a2332",
     },
   },
 });
@@ -48,8 +59,38 @@ function TabPanel(props: TabPanelProps) {
 
 function App() {
   const [tabValue, setTabValue] = useState(0);
+  const [userId] = useState(() => getUserId());
+
+  // 페이지 이름 매핑
+  const pageNames = [
+    "Dashboard",
+    "ETF List",
+    "Stock Detail",
+    "News Feed",
+    "AI Chat",
+  ];
+  const currentPage = pageNames[tabValue];
+
+  // 현재 페이지 추적
+  const { sessionId } = usePageTracking(currentPage, userId, {
+    tab_index: tabValue,
+  });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    // 탭 변경 이벤트 추적
+    trackEvent({
+      event_name: "tab_changed",
+      event_category: "navigation",
+      user_id: userId,
+      session_id: sessionId,
+      properties: {
+        from_tab: pageNames[tabValue],
+        to_tab: pageNames[newValue],
+        from_index: tabValue,
+        to_index: newValue,
+      },
+    });
+
     setTabValue(newValue);
   };
 

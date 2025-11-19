@@ -41,10 +41,13 @@ class TracingMiddleware(BaseHTTPMiddleware):
                 span.set_attribute("http.client.host", request.client.host)
                 span.set_attribute("http.client.port", request.client.port)
             
-            # 쿼리 파라미터
+            # 쿼리 파라미터 (Live Metrics에 표시)
             if request.query_params:
+                query_str = "&".join([f"{k}={v}" for k, v in request.query_params.items()])
+                span.set_attribute("http.query_string", query_str)
                 for key, value in request.query_params.items():
                     span.set_attribute(f"http.query.{key}", value)
+                logger.info(f"📊 Query params: {query_str}")
             
             # 헤더 (민감한 정보 제외)
             safe_headers = ["content-type", "user-agent", "accept"]
@@ -71,13 +74,28 @@ class TracingMiddleware(BaseHTTPMiddleware):
                 return response
                 
             except Exception as e:
-                # 오류 기록
+                # 오류 기록 → exceptions 테이블
                 span.set_status(Status(StatusCode.ERROR, str(e)))
-                span.record_exception(e)
+                span.record_exception(e)  # exceptions 테이블에 기록
                 span.set_attribute("http.status_code", 500)
+                
+                # TelemetryClient로도 예외 기록
+                from .telemetry import track_exception
+                track_exception(e, {
+                    "endpoint": request.url.path,
+                    "method": request.method,
+                })
                 raise
                 
             finally:
                 # 처리 시간 기록
                 duration = time.time() - start_time
-                span.set_attribute("http.duration_ms", round(duration * 1000, 2))
+                duration_ms = round(duration * 1000, 2)
+                span.set_attribute("http.duration_ms", duration_ms)
+                
+                # traces 테이블에 로그 기록
+                status = response.status_code if 'response' in locals() else 500
+                logger.info(
+                    f"⚡ {request.method} {request.url.path} | "
+                    f"Status: {status} | Duration: {duration_ms}ms"
+                )

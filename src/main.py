@@ -7,7 +7,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import chat, etf, news, stocks
+from .api import analytics, chat, etf, news, stocks
 from .observability import (TracingMiddleware, initialize_metrics,
                             setup_telemetry)
 
@@ -51,6 +51,7 @@ app.include_router(etf.router)
 app.include_router(stocks.router)
 app.include_router(news.router)
 app.include_router(chat.router)
+app.include_router(analytics.router)
 
 logger.info("🚀 ETF Agent API 시작 - Live Metrics 활성화됨")
 
