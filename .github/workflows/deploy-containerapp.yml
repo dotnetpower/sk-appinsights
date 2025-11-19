@@ -78,13 +78,67 @@ jobs:
               --location koreacentral
           fi
           
-          # Container App 생성
-          az containerapp create \
+          # Secrets 준비 (값이 있는 것만 추가)
+          SECRETS=""
+          if [ -n "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" ]; then
+            SECRETS="$SECRETS appinsights-connection-string=\"${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}\""
+          fi
+          if [ -n "${{ secrets.COSMOS_ENDPOINT }}" ]; then
+            SECRETS="$SECRETS cosmos-endpoint=\"${{ secrets.COSMOS_ENDPOINT }}\""
+          fi
+          if [ -n "${{ secrets.COSMOS_KEY }}" ]; then
+            SECRETS="$SECRETS cosmos-key=\"${{ secrets.COSMOS_KEY }}\""
+          fi
+          if [ -n "${{ secrets.COSMOS_DATABASE_NAME }}" ]; then
+            SECRETS="$SECRETS cosmos-database-name=\"${{ secrets.COSMOS_DATABASE_NAME }}\""
+          fi
+          if [ -n "${{ secrets.COSMOS_CONTAINER_NAME }}" ]; then
+            SECRETS="$SECRETS cosmos-container-name=\"${{ secrets.COSMOS_CONTAINER_NAME }}\""
+          fi
+          if [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
+            SECRETS="$SECRETS openai-api-key=\"${{ secrets.OPENAI_API_KEY }}\""
+          fi
+          if [ -n "${{ secrets.ALPHA_VANTAGE_API_KEY }}" ]; then
+            SECRETS="$SECRETS alphavantage-api-key=\"${{ secrets.ALPHA_VANTAGE_API_KEY }}\""
+          fi
+          if [ -n "${{ secrets.FINNHUB_API_KEY }}" ]; then
+            SECRETS="$SECRETS finnhub-api-key=\"${{ secrets.FINNHUB_API_KEY }}\""
+          fi
+          
+          # 환경변수 준비
+          ENV_VARS="LOG_LEVEL=INFO"
+          if [ -n "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" ]; then
+            ENV_VARS="$ENV_VARS APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string"
+          fi
+          if [ -n "${{ secrets.COSMOS_ENDPOINT }}" ]; then
+            ENV_VARS="$ENV_VARS COSMOS_ENDPOINT=secretref:cosmos-endpoint"
+          fi
+          if [ -n "${{ secrets.COSMOS_KEY }}" ]; then
+            ENV_VARS="$ENV_VARS COSMOS_KEY=secretref:cosmos-key"
+          fi
+          if [ -n "${{ secrets.COSMOS_DATABASE_NAME }}" ]; then
+            ENV_VARS="$ENV_VARS COSMOS_DATABASE_NAME=secretref:cosmos-database-name"
+          fi
+          if [ -n "${{ secrets.COSMOS_CONTAINER_NAME }}" ]; then
+            ENV_VARS="$ENV_VARS COSMOS_CONTAINER_NAME=secretref:cosmos-container-name"
+          fi
+          if [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
+            ENV_VARS="$ENV_VARS OPENAI_API_KEY=secretref:openai-api-key"
+          fi
+          if [ -n "${{ secrets.ALPHA_VANTAGE_API_KEY }}" ]; then
+            ENV_VARS="$ENV_VARS ALPHA_VANTAGE_API_KEY=secretref:alphavantage-api-key"
+          fi
+          if [ -n "${{ secrets.FINNHUB_API_KEY }}" ]; then
+            ENV_VARS="$ENV_VARS FINNHUB_API_KEY=secretref:finnhub-api-key"
+          fi
+          
+          # Container App 생성 (secrets와 env-vars가 있는 경우에만 추가)
+          CREATE_CMD="az containerapp create \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --environment etf-agent-env \
             --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            --registry-server "${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io" \
+            --registry-server \"${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io\" \
             --registry-username $ACR_USERNAME \
             --registry-password $ACR_PASSWORD \
             --target-port 8000 \
@@ -92,27 +146,17 @@ jobs:
             --min-replicas 1 \
             --max-replicas 3 \
             --cpu 0.5 \
-            --memory 1Gi \
-            --secrets \
-              appinsights-connection-string="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
-              cosmos-endpoint="${{ secrets.COSMOS_ENDPOINT }}" \
-              cosmos-key="${{ secrets.COSMOS_KEY }}" \
-              cosmos-database-name="${{ secrets.COSMOS_DATABASE_NAME }}" \
-              cosmos-container-name="${{ secrets.COSMOS_CONTAINER_NAME }}" \
-              openai-api-key="${{ secrets.OPENAI_API_KEY }}" \
-              alphavantage-api-key="${{ secrets.ALPHA_VANTAGE_API_KEY }}" \
-              finnhub-api-key="${{ secrets.FINNHUB_API_KEY }}" \
-            --env-vars \
-              "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string" \
-              "COSMOS_ENDPOINT=secretref:cosmos-endpoint" \
-              "COSMOS_KEY=secretref:cosmos-key" \
-              "COSMOS_DATABASE_NAME=secretref:cosmos-database-name" \
-              "COSMOS_CONTAINER_NAME=secretref:cosmos-container-name" \
-              "OPENAI_API_KEY=secretref:openai-api-key" \
-              "OPENAI_MODEL=gpt-4" \
-              "ALPHA_VANTAGE_API_KEY=secretref:alphavantage-api-key" \
-              "FINNHUB_API_KEY=secretref:finnhub-api-key" \
-              "LOG_LEVEL=INFO"
+            --memory 1Gi"
+          
+          if [ -n "$SECRETS" ]; then
+            CREATE_CMD="$CREATE_CMD --secrets $SECRETS"
+          fi
+          
+          if [ -n "$ENV_VARS" ]; then
+            CREATE_CMD="$CREATE_CMD --env-vars \"$ENV_VARS\""
+          fi
+          
+          eval $CREATE_CMD
         fi
     
     - name: 🎉 Get App URL
