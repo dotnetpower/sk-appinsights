@@ -88,6 +88,6 @@
   "github.copilot.chat.localeOverride": "ko",
   "github.copilot.chat.generateCommitMessage.enabled": true,
   "github.copilot.chat.commitMessageGeneration.instructions": [
-    {"text":"한국어로 간략하게 생성해"}
+    {"text":"한국어로 간략하게 생성해, feat: 같은건 넣지마"}
   ]
 }
