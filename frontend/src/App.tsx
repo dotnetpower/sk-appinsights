@@ -16,6 +16,8 @@ import StockDetail from "./components/StockDetail";
 import NewsFeed from "./components/NewsFeed";
 import ChatInterface from "./components/ChatInterface";
 import { usePageTracking, getUserId } from "./hooks/usePageTracking";
+import { usePageVisibility, usePageFocus } from "./hooks/usePageVisibility";
+import { useMouseTracking, useScrollTracking } from "./hooks/useMouseTracking";
 import { trackEvent } from "./services/analytics";
 import "./App.css";
 
@@ -81,6 +83,39 @@ function App() {
   // 현재 페이지 추적
   const { sessionId } = usePageTracking(currentPage, userId, {
     tab_index: tabValue,
+  });
+
+  // 페이지 가시성 추적 (탭이 활성화되어 있는지)
+  usePageVisibility({
+    userId,
+    sessionId,
+    pageName: currentPage,
+  });
+
+  // 페이지 포커스 추적 (브라우저 창이 포커스를 받았는지)
+  usePageFocus({
+    userId,
+    sessionId,
+    pageName: currentPage,
+  });
+
+  // 마우스 위치 추적 (사용자가 선호하는 화면 영역 분석)
+  useMouseTracking({
+    userId,
+    sessionId,
+    pageName: currentPage,
+    samplingInterval: 1000, // 1초마다 샘플링
+    trackClicks: true, // 클릭 추적
+    trackHover: true, // 호버 추적
+    hoverThreshold: 2000, // 2초 이상 머물면 호버로 간주
+  });
+
+  // 스크롤 위치 추적
+  useScrollTracking({
+    userId,
+    sessionId,
+    pageName: currentPage,
+    samplingInterval: 2000, // 2초마다 샘플링
   });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {

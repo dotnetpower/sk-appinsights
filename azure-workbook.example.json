@@ -233,6 +233,943 @@
     {
       "type": 1,
       "content": {
+        "json": "---\n## 📊 페이지 뷰 Heatmap (날짜/시간별)\n"
+      },
+      "name": "text - pageview-heatmap",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| extend \n    Date = format_datetime(timestamp, 'yyyy-MM-dd'),\n    Hour = hourofday(timestamp)\n| summarize PageViewCount = count() by Date, Hour\n| order by Date asc, Hour asc",
+        "size": 0,
+        "title": "페이지 뷰 Heatmap - 날짜별/시간대별 활동",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "PageViewCount",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "blue"
+              }
+            }
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": ["Date"],
+            "expandTopLevel": true
+          }
+        }
+      },
+      "name": "query - pageview-heatmap-1",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| extend \n    DayOfWeek = case(\n        dayofweek(timestamp) == 0d, '일요일',\n        dayofweek(timestamp) == 1d, '월요일',\n        dayofweek(timestamp) == 2d, '화요일',\n        dayofweek(timestamp) == 3d, '수요일',\n        dayofweek(timestamp) == 4d, '목요일',\n        dayofweek(timestamp) == 5d, '금요일',\n        dayofweek(timestamp) == 6d, '토요일',\n        'Unknown'\n    ),\n    Hour = hourofday(timestamp)\n| summarize ViewCount = count() by DayOfWeek, Hour\n| extend DayOfWeekOrder = case(\n    DayOfWeek == '월요일', 1,\n    DayOfWeek == '화요일', 2,\n    DayOfWeek == '수요일', 3,\n    DayOfWeek == '목요일', 4,\n    DayOfWeek == '금요일', 5,\n    DayOfWeek == '토요일', 6,\n    DayOfWeek == '일요일', 7,\n    8\n)\n| order by DayOfWeekOrder asc, Hour asc\n| project DayOfWeek, Hour, ViewCount",
+        "size": 0,
+        "title": "요일별/시간대별 페이지 뷰 패턴",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "categoricalbar",
+        "chartSettings": {
+          "group": "DayOfWeek",
+          "createOtherGroup": 0,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "ViewCount",
+              "color": "blue"
+            }
+          ],
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "name": "query - pageview-heatmap-2",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| extend Hour = hourofday(timestamp)\n| summarize \n    TotalViews = count(),\n    UniquePages = dcount(name),\n    AvgDuration = avg(duration)\n    by Hour\n| extend HourLabel = strcat(Hour, ':00')\n| project \n    ['시간대'] = HourLabel,\n    ['총 페이지뷰'] = TotalViews,\n    ['고유 페이지 수'] = UniquePages,\n    ['평균 체류시간 (ms)'] = round(AvgDuration, 2)\n| order by ['시간대'] asc",
+        "size": 0,
+        "title": "시간대별 페이지 뷰 통계",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "총 페이지뷰",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "평균 체류시간 (ms)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "green"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - pageview-heatmap-3",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| extend PageName = name\n| extend Hour = hourofday(timestamp)\n| summarize ViewCount = count() by PageName, Hour\n| order by PageName asc, Hour asc",
+        "size": 0,
+        "title": "페이지별 시간대별 활동 분포",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart",
+        "chartSettings": {
+          "group": "PageName",
+          "createOtherGroup": 0,
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "name": "query - pageview-heatmap-4",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 📈 사용자 참여도 (Engagement) 지표\n"
+      },
+      "name": "text - engagement",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let timeRange = {TimeRange};\nlet sessions = pageViews\n| where timestamp >= ago(timeRange)\n| extend SessionId = tostring(customDimensions.session_id)\n| where isnotempty(SessionId)\n| summarize \n    PageViewsPerSession = count(),\n    AvgDuration = avg(duration),\n    TotalDuration = sum(duration),\n    UniquePages = dcount(name),\n    FirstPage = min(name),\n    LastPage = max(name)\n    by SessionId\n| extend IsBouncedSession = iff(PageViewsPerSession == 1, 1, 0);\nlet totalSessions = toscalar(sessions | count);\nlet bouncedSessions = toscalar(sessions | where IsBouncedSession == 1 | count);\nsessions\n| summarize \n    ['총 세션 수'] = count(),\n    ['평균 세션당 페이지뷰'] = round(avg(PageViewsPerSession), 2),\n    ['평균 세션 시간 (초)'] = round(avg(TotalDuration) / 1000, 2),\n    ['평균 페이지 체류시간 (초)'] = round(avg(AvgDuration) / 1000, 2),\n    ['반송률 (%)'] = round(100.0 * bouncedSessions / totalSessions, 2),\n    ['평균 고유 페이지 수'] = round(avg(UniquePages), 2)",
+        "size": 3,
+        "title": "세션 참여도 요약",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "showBorder": false,
+          "titleContent": {
+            "columnMatch": "총 세션 수",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "평균 세션당 페이지뷰",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          }
+        }
+      },
+      "name": "query - engagement-summary",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| extend UserId = tostring(customDimensions.user_id)\n| where isnotempty(UserId)\n| summarize \n    FirstVisit = min(timestamp),\n    LastVisit = max(timestamp),\n    TotalVisits = count(),\n    UniqueDays = dcount(format_datetime(timestamp, 'yyyy-MM-dd'))\n    by UserId\n| extend \n    IsReturningUser = iff(UniqueDays > 1, 1, 0),\n    DaysSinceFirstVisit = datetime_diff('day', now(), FirstVisit)\n| summarize \n    ['총 사용자 수'] = count(),\n    ['신규 사용자'] = countif(IsReturningUser == 0),\n    ['재방문 사용자'] = countif(IsReturningUser == 1),\n    ['재방문율 (%)'] = round(100.0 * countif(IsReturningUser == 1) / count(), 2),\n    ['평균 방문 일수'] = round(avg(UniqueDays), 2)",
+        "size": 0,
+        "title": "사용자 재방문 분석",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "showBorder": false
+        }
+      },
+      "name": "query - engagement-retention",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| summarize \n    ViewCount = count(),\n    AvgDuration = avg(duration),\n    P50Duration = percentile(duration, 50),\n    P95Duration = percentile(duration, 95)\n    by PageName = name\n| project \n    ['페이지'] = PageName,\n    ['조회 수'] = ViewCount,\n    ['평균 체류시간 (초)'] = round(AvgDuration / 1000, 2),\n    ['중간값 체류시간 (초)'] = round(P50Duration / 1000, 2),\n    ['P95 체류시간 (초)'] = round(P95Duration / 1000, 2)\n| order by ['조회 수'] desc",
+        "size": 0,
+        "title": "페이지별 체류시간 분석",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "조회 수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "평균 체류시간 (초)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "green"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - engagement-page-time",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 🎯 상호작용 (Interaction) 지표\n"
+      },
+      "name": "text - interaction",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| extend EventCategory = tostring(customDimensions.event_category)\n| summarize \n    EventCount = count(),\n    UniqueUsers = dcount(tostring(customDimensions.user_id)),\n    UniqueSessions = dcount(tostring(customDimensions.session_id))\n    by EventName = name, EventCategory\n| project \n    ['이벤트 카테고리'] = EventCategory,\n    ['이벤트 이름'] = EventName,\n    ['발생 횟수'] = EventCount,\n    ['고유 사용자'] = UniqueUsers,\n    ['고유 세션'] = UniqueSessions,\n    ['세션당 평균 발생'] = round(1.0 * EventCount / UniqueSessions, 2)\n| order by ['발생 횟수'] desc",
+        "size": 0,
+        "title": "사용자 이벤트 발생 통계",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "발생 횟수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - interaction-events",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| extend SessionId = tostring(customDimensions.session_id)\n| where isnotempty(SessionId)\n| summarize InteractionCount = count() by SessionId\n| summarize \n    ['총 세션 수'] = count(),\n    ['평균 인터랙션 수'] = round(avg(InteractionCount), 2),\n    ['중간값 인터랙션 수'] = percentile(InteractionCount, 50),\n    ['최대 인터랙션 수'] = max(InteractionCount),\n    ['높은 참여 세션 (10회 이상)'] = countif(InteractionCount >= 10)\n| extend ['높은 참여 비율 (%)'] = round(100.0 * ['높은 참여 세션 (10회 이상)'] / ['총 세션 수'], 2)",
+        "size": 0,
+        "title": "세션당 상호작용 깊이",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "showBorder": false
+        }
+      },
+      "name": "query - interaction-depth",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 🔧 기능 사용률 (Feature Adoption)\n"
+      },
+      "name": "text - feature",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let totalUsers = toscalar(pageViews | where timestamp {TimeRange} | extend UserId = tostring(customDimensions.user_id) | where isnotempty(UserId) | summarize dcount(UserId));\nunion \n    (pageViews | where timestamp {TimeRange} | where name contains 'Chat' | extend Feature = '💬 채팅 인터페이스'),\n    (pageViews | where timestamp {TimeRange} | where name contains 'ETF' and name contains 'Detail' | extend Feature = '📊 ETF 상세 조회'),\n    (pageViews | where timestamp {TimeRange} | where name contains 'News' | extend Feature = '📰 뉴스 피드'),\n    (pageViews | where timestamp {TimeRange} | where name contains 'Dashboard' | extend Feature = '📈 대시보드')\n| extend UserId = tostring(customDimensions.user_id)\n| where isnotempty(Feature)\n| summarize \n    사용횟수 = count(),\n    고유사용자 = dcount(UserId),\n    평균체류시간_초 = round(avg(duration) / 1000, 2)\n    by Feature\n| extend \n    ['사용자 채택률 (%)'] = round(100.0 * 고유사용자 / totalUsers, 2),\n    ['사용자당 평균 사용'] = round(1.0 * 사용횟수 / 고유사용자, 2)\n| project \n    ['기능'] = Feature,\n    ['총 사용 횟수'] = 사용횟수,\n    ['고유 사용자'] = 고유사용자,\n    ['사용자 채택률 (%)'],\n    ['사용자당 평균 사용'],\n    ['평균 체류시간 (초)'] = 평균체류시간_초\n| order by ['총 사용 횟수'] desc",
+        "size": 0,
+        "title": "주요 기능별 사용률",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "총 사용 횟수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "사용자 채택률 (%)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "green"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - feature-adoption",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name in ('search', 'filter_applied', 'sort_changed', 'chart_interaction')\n| extend EventType = case(\n    name == 'search', '🔍 검색',\n    name == 'filter_applied', '🔎 필터 적용',\n    name == 'sort_changed', '↕️ 정렬 변경',\n    name == 'chart_interaction', '📊 차트 클릭',\n    name\n)\n| summarize \n    발생횟수 = count(),\n    고유사용자 = dcount(tostring(customDimensions.user_id))\n    by EventType\n| extend 사용자당평균 = round(1.0 * 발생횟수 / 고유사용자, 2)\n| project \n    ['인터랙션 유형'] = EventType,\n    ['총 발생 횟수'] = 발생횟수,\n    ['고유 사용자 수'] = 고유사용자,\n    ['사용자당 평균'] = 사용자당평균\n| order by ['총 발생 횟수'] desc",
+        "size": 0,
+        "title": "탐색 및 상호작용 패턴",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "총 발생 횟수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "purple"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - feature-interaction",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## ⚡ 품질 지표 (Quality Metrics)\n"
+      },
+      "name": "text - quality",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let totalRequests = toscalar(requests | where timestamp {TimeRange} | count);\nlet failedRequests = toscalar(requests | where timestamp {TimeRange} and success == false | count);\nlet totalPageViews = toscalar(pageViews | where timestamp {TimeRange} | count);\nrequests\n| where timestamp {TimeRange}\n| summarize \n    ['총 요청 수'] = count(),\n    ['평균 응답시간 (ms)'] = round(avg(duration), 2),\n    ['P50 응답시간 (ms)'] = round(percentile(duration, 50), 2),\n    ['P95 응답시간 (ms)'] = round(percentile(duration, 95), 2),\n    ['P99 응답시간 (ms)'] = round(percentile(duration, 99), 2),\n    ['에러율 (%)'] = round(100.0 * failedRequests / totalRequests, 2)",
+        "size": 0,
+        "title": "API 성능 및 에러율",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "showBorder": false
+        }
+      },
+      "name": "query - quality-performance",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| extend LoadTime = duration\n| summarize \n    조회수 = count(),\n    평균로딩시간 = round(avg(LoadTime), 2),\n    P50로딩시간 = round(percentile(LoadTime, 50), 2),\n    P95로딩시간 = round(percentile(LoadTime, 95), 2),\n    느린페이지_3초이상 = countif(LoadTime > 3000)\n    by PageName = name\n| extend 느린페이지비율 = round(100.0 * 느린페이지_3초이상 / 조회수, 2)\n| project \n    ['페이지'] = PageName,\n    ['조회 수'] = 조회수,\n    ['평균 로딩 (ms)'] = 평균로딩시간,\n    ['P50 로딩 (ms)'] = P50로딩시간,\n    ['P95 로딩 (ms)'] = P95로딩시간,\n    ['느린 페이지 비율 (%)'] = 느린페이지비율\n| order by ['조회 수'] desc",
+        "size": 0,
+        "title": "페이지 로딩 성능 분석",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "평균 로딩 (ms)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "greenRed"
+              }
+            },
+            {
+              "columnMatch": "느린 페이지 비율 (%)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "redGreen"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - quality-loading",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "union exceptions, traces\n| where timestamp {TimeRange}\n| extend ErrorType = iff(itemType == 'exception', 'Exception', strcat('Trace-Level', tostring(severityLevel)))\n| extend UserId = tostring(customDimensions.user_id)\n| summarize \n    오류발생수 = count(),\n    영향받은사용자 = dcount(UserId)\n    by ErrorType\n| extend 사용자당평균오류 = round(1.0 * 오류발생수 / 영향받은사용자, 2)\n| project \n    ['오류 타입'] = ErrorType,\n    ['총 발생 수'] = 오류발생수,\n    ['영향받은 사용자'] = 영향받은사용자,\n    ['사용자당 평균 오류'] = 사용자당평균오류\n| order by ['총 발생 수'] desc",
+        "size": 0,
+        "title": "사용자 경험 오류 영향 분석",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "총 발생 수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "red"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - quality-errors",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 👥 코호트 분석 (Cohort Analysis)\n"
+      },
+      "name": "text - cohort",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let dailyUsers = pageViews\n| where timestamp >= ago(1d)\n| extend UserId = tostring(customDimensions.user_id)\n| where isnotempty(UserId)\n| summarize by UserId\n| count;\nlet weeklyUsers = pageViews\n| where timestamp >= ago(7d)\n| extend UserId = tostring(customDimensions.user_id)\n| where isnotempty(UserId)\n| summarize by UserId\n| count;\nlet monthlyUsers = pageViews\n| where timestamp >= ago(30d)\n| extend UserId = tostring(customDimensions.user_id)\n| where isnotempty(UserId)\n| summarize by UserId\n| count;\nprint \n    ['일일 활성 사용자 (DAU)'] = dailyUsers,\n    ['주간 활성 사용자 (WAU)'] = weeklyUsers,\n    ['월간 활성 사용자 (MAU)'] = monthlyUsers,\n    ['DAU/MAU 비율 (%)'] = round(100.0 * dailyUsers / monthlyUsers, 2),\n    ['WAU/MAU 비율 (%)'] = round(100.0 * weeklyUsers / monthlyUsers, 2)",
+        "size": 0,
+        "title": "활성 사용자 지표 (DAU/WAU/MAU)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "showBorder": false
+        }
+      },
+      "name": "query - cohort-active-users",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| extend UserId = tostring(customDimensions.user_id)\n| where isnotempty(UserId)\n| summarize \n    FirstVisit = min(timestamp),\n    VisitCount = count(),\n    UniqueDays = dcount(format_datetime(timestamp, 'yyyy-MM-dd'))\n    by UserId\n| extend \n    UserType = case(\n        UniqueDays == 1, '🆕 신규 사용자',\n        UniqueDays <= 7, '🔄 초기 재방문자',\n        UniqueDays <= 30, '⭐ 활성 사용자',\n        '💎 충성 사용자'\n    ),\n    DaysSinceFirst = datetime_diff('day', now(), FirstVisit)\n| summarize \n    사용자수 = count(),\n    평균방문일수 = round(avg(UniqueDays), 2),\n    평균방문횟수 = round(avg(VisitCount), 2)\n    by UserType\n| extend 사용자비율 = round(100.0 * 사용자수 / toscalar(summarize sum(사용자수)), 2)\n| project \n    ['사용자 유형'] = UserType,\n    ['사용자 수'] = 사용자수,\n    ['비율 (%)'] = 사용자비율,\n    ['평균 방문 일수'] = 평균방문일수,\n    ['평균 방문 횟수'] = 평균방문횟수\n| order by 사용자수 desc",
+        "size": 0,
+        "title": "사용자 세그먼트 분석",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "piechart"
+      },
+      "name": "query - cohort-segments",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let cohortPeriod = 7d;\nlet retentionPeriod = 7d;\nlet cohortUsers = pageViews\n| where timestamp between (ago(cohortPeriod + retentionPeriod) .. ago(retentionPeriod))\n| extend UserId = tostring(customDimensions.user_id)\n| where isnotempty(UserId)\n| summarize by UserId;\nlet returnedUsers = pageViews\n| where timestamp >= ago(retentionPeriod)\n| extend UserId = tostring(customDimensions.user_id)\n| where isnotempty(UserId)\n| summarize by UserId;\ncohortUsers\n| join kind=leftouter (returnedUsers) on UserId\n| summarize \n    초기사용자수 = count(),\n    재방문사용자수 = countif(isnotempty(UserId1))\n| extend 유지율_7일 = round(100.0 * 재방문사용자수 / 초기사용자수, 2)\n| project \n    ['코호트 기간'] = '7일 전',\n    ['초기 사용자 수'] = 초기사용자수,\n    ['7일 후 재방문 사용자'] = 재방문사용자수,\n    ['7일 유지율 (%)'] = 유지율_7일",
+        "size": 0,
+        "title": "사용자 유지율 (7일 Retention)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "showBorder": false
+        }
+      },
+      "name": "query - cohort-retention",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 🎯 전환 퍼널 (Conversion Funnel)\n"
+      },
+      "name": "text - funnel",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let users = pageViews\n| where timestamp {TimeRange}\n| extend \n    UserId = tostring(customDimensions.user_id),\n    SessionId = tostring(customDimensions.session_id)\n| where isnotempty(SessionId);\nlet step1 = users | where name contains 'Dashboard' or name == '/' | summarize by SessionId;\nlet step2 = users | where name contains 'ETF' | summarize by SessionId;\nlet step3 = users | where name contains 'Detail' | summarize by SessionId;\nlet step4 = users | where name contains 'Chat' | summarize by SessionId;\nlet totalSessions = toscalar(step1 | count);\nunion \n    (step1 | extend Step = '1️⃣ 랜딩 (Dashboard)', StepOrder = 1),\n    (step2 | extend Step = '2️⃣ ETF 목록 조회', StepOrder = 2),\n    (step3 | extend Step = '3️⃣ 상세 정보 조회', StepOrder = 3),\n    (step4 | extend Step = '4️⃣ AI 채팅 사용', StepOrder = 4)\n| summarize SessionCount = dcount(SessionId) by Step, StepOrder\n| order by StepOrder asc\n| extend \n    ['전환율 (%)'] = round(100.0 * SessionCount / totalSessions, 2),\n    ['이탈률 (%)'] = round(100.0 - (100.0 * SessionCount / totalSessions), 2)\n| project \n    ['단계'] = Step,\n    ['세션 수'] = SessionCount,\n    ['전환율 (%)'],\n    ['이탈률 (%)']",
+        "size": 0,
+        "title": "사용자 여정 퍼널 분석",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart",
+        "chartSettings": {
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "name": "query - funnel-journey",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "pageViews\n| where timestamp {TimeRange}\n| extend \n    SessionId = tostring(customDimensions.session_id),\n    PageName = name\n| where isnotempty(SessionId)\n| summarize Pages = make_list(PageName) by SessionId\n| extend \n    FirstPage = tostring(Pages[0]),\n    SecondPage = tostring(iff(array_length(Pages) > 1, Pages[1], '')),\n    ThirdPage = tostring(iff(array_length(Pages) > 2, Pages[2], '')),\n    PathLength = array_length(Pages)\n| where isnotempty(SecondPage)\n| summarize \n    경로수 = count(),\n    평균경로길이 = round(avg(PathLength), 2)\n    by Journey = strcat(FirstPage, ' → ', SecondPage, iff(isnotempty(ThirdPage), strcat(' → ', ThirdPage), ''))\n| top 10 by 경로수 desc\n| project \n    ['사용자 여정'] = Journey,\n    ['발생 횟수'] = 경로수,\n    ['평균 페이지 수'] = 평균경로길이",
+        "size": 0,
+        "title": "주요 사용자 경로 (Top 10)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "발생 횟수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - funnel-paths",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let goalEvents = dynamic(['search', 'filter_applied', 'etf_detail_view', 'chat_message_sent']);\ncustomEvents\n| where timestamp {TimeRange}\n| where name in (goalEvents)\n| extend \n    SessionId = tostring(customDimensions.session_id),\n    GoalType = case(\n        name == 'search', '🔍 검색 수행',\n        name == 'filter_applied', '🔎 필터 사용',\n        name == 'etf_detail_view', '📊 ETF 상세 조회',\n        name == 'chat_message_sent', '💬 AI 질문',\n        name\n    )\n| summarize GoalAchieved = count() by SessionId, GoalType\n| summarize \n    달성세션수 = dcount(SessionId),\n    총달성횟수 = sum(GoalAchieved)\n    by GoalType\n| extend 세션당평균달성 = round(1.0 * 총달성횟수 / 달성세션수, 2)\n| project \n    ['목표 유형'] = GoalType,\n    ['달성 세션 수'] = 달성세션수,\n    ['총 달성 횟수'] = 총달성횟수,\n    ['세션당 평균'] = 세션당평균달성\n| order by ['달성 세션 수'] desc",
+        "size": 0,
+        "title": "목표 달성률 분석",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "달성 세션 수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "green"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - funnel-goals",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 🖱️ 마우스 위치 및 상호작용 분석\n"
+      },
+      "name": "text - mouse-tracking",
+      "customWidth": "100"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == 'mouse_movement_summary'\n| extend \n    page_name = tostring(customDimensions.page_name),\n    most_visited = tostring(customDimensions.most_visited_zone),\n    zone_visits = parse_json(tostring(customDimensions.zone_visits))\n| summarize \n    TotalSessions = dcount(tostring(customDimensions.session_id)),\n    AvgSamples = avg(tolong(customDimensions.total_samples)),\n    TotalClicks = sum(tolong(customDimensions.click_count)),\n    TotalHovers = sum(tolong(customDimensions.hover_count))\n    by page_name, most_visited\n| project \n    ['페이지'] = page_name,\n    ['가장 많이 방문한 영역'] = most_visited,\n    ['세션 수'] = TotalSessions,\n    ['평균 마우스 샘플'] = round(AvgSamples, 1),\n    ['총 클릭 수'] = TotalClicks,\n    ['총 호버 수'] = TotalHovers\n| order by ['세션 수'] desc",
+        "size": 0,
+        "title": "페이지별 선호 영역 요약",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "세션 수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "총 클릭 수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "green"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - mouse-summary",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == 'mouse_click'\n| extend \n    page_name = tostring(customDimensions.page_name),\n    zone = tostring(customDimensions.zone),\n    x = tolong(customDimensions.x),\n    y = tolong(customDimensions.y),\n    rel_x = toreal(customDimensions.relative_x),\n    rel_y = toreal(customDimensions.relative_y)\n| summarize \n    ClickCount = count(),\n    UniqueUsers = dcount(user_Id)\n    by page_name, zone\n| project \n    ['페이지'] = page_name,\n    ['화면 영역'] = zone,\n    ['클릭 수'] = ClickCount,\n    ['고유 사용자'] = UniqueUsers\n| order by ['클릭 수'] desc",
+        "size": 0,
+        "title": "영역별 클릭 분포 (히트맵 데이터)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "클릭 수",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "greenRed"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - mouse-clicks-heatmap",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == 'mouse_click'\n| extend \n    page_name = tostring(customDimensions.page_name),\n    rel_x = toreal(customDimensions.relative_x),\n    rel_y = toreal(customDimensions.relative_y)\n| where isnotnull(rel_x) and isnotnull(rel_y)\n| summarize \n    ClickCount = count()\n    by \n    page_name,\n    x_bucket = bin(rel_x, 0.1),\n    y_bucket = bin(rel_y, 0.1)\n| extend \n    X영역 = strcat(tostring(toint(x_bucket * 100)), '%'),\n    Y영역 = strcat(tostring(toint(y_bucket * 100)), '%')\n| project \n    ['페이지'] = page_name,\n    ['X 위치 (%)'] = X영역,\n    ['Y 위치 (%)'] = Y영역,\n    ['클릭 밀도'] = ClickCount\n| order by ['클릭 밀도'] desc\n| take 50",
+        "size": 0,
+        "title": "클릭 위치 히트맵 (상대 좌표 10% 단위)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "클릭 밀도",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "turquoise"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - mouse-position-heatmap",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == 'mouse_hover'\n| extend \n    page_name = tostring(customDimensions.page_name),\n    zone = tostring(customDimensions.zone),\n    hover_duration = tolong(customDimensions.hover_duration_ms)\n| summarize \n    HoverCount = count(),\n    AvgHoverTime = round(avg(hover_duration) / 1000, 2)\n    by page_name, zone\n| project \n    ['페이지'] = page_name,\n    ['영역'] = zone,\n    ['호버 횟수'] = HoverCount,\n    ['평균 호버 시간 (초)'] = AvgHoverTime\n| order by ['호버 횟수'] desc",
+        "size": 0,
+        "title": "영역별 호버 패턴 (관심 영역 분석)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "호버 횟수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "purple"
+              }
+            },
+            {
+              "columnMatch": "평균 호버 시간 (초)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "orange"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - mouse-hover",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == 'mouse_click'\n| extend \n    element = parse_json(tostring(customDimensions.element)),\n    page_name = tostring(customDimensions.page_name)\n| extend \n    ElementTag = tostring(element.tag),\n    ElementId = tostring(element.id),\n    ElementClass = tostring(element.className)\n| where isnotempty(ElementTag)\n| summarize \n    ClickCount = count(),\n    UniqueUsers = dcount(user_Id)\n    by page_name, ElementTag, ElementId, ElementClass\n| extend \n    ElementInfo = case(\n        isnotempty(ElementId), strcat(ElementTag, '#', ElementId),\n        isnotempty(ElementClass), strcat(ElementTag, '.', ElementClass),\n        ElementTag\n    )\n| project \n    ['페이지'] = page_name,\n    ['클릭된 요소'] = ElementInfo,\n    ['클릭 수'] = ClickCount,\n    ['고유 사용자'] = UniqueUsers\n| order by ['클릭 수'] desc\n| take 20",
+        "size": 0,
+        "title": "가장 많이 클릭된 UI 요소 (Top 20)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "클릭 수",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - mouse-elements",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == 'mouse_movement_summary'\n| extend \n    page_name = tostring(customDimensions.page_name),\n    zone_visits = parse_json(tostring(customDimensions.zone_visits))\n| mv-expand zone_visits\n| extend \n    zone_name = tostring(bag_keys(zone_visits)[0]),\n    visit_count = tolong(zone_visits[tostring(bag_keys(zone_visits)[0])])\n| summarize \n    TotalVisits = sum(visit_count),\n    AvgVisits = round(avg(visit_count), 1)\n    by zone_name\n| extend \n    ZoneDisplay = case(\n        zone_name == 'top-left', '↖️ 좌상단',\n        zone_name == 'top-center', '⬆️ 상단중앙',\n        zone_name == 'top-right', '↗️ 우상단',\n        zone_name == 'middle-left', '⬅️ 좌측중앙',\n        zone_name == 'middle-center', '⏺️ 정중앙',\n        zone_name == 'middle-right', '➡️ 우측중앙',\n        zone_name == 'bottom-left', '↙️ 좌하단',\n        zone_name == 'bottom-center', '⬇️ 하단중앙',\n        zone_name == 'bottom-right', '↘️ 우하단',\n        zone_name\n    )\n| project \n    ['화면 영역'] = ZoneDisplay,\n    ['총 방문 횟수'] = TotalVisits,\n    ['평균 방문'] = AvgVisits\n| order by ['총 방문 횟수'] desc",
+        "size": 0,
+        "title": "화면 영역별 마우스 활동 분포 (3x3 그리드)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart",
+        "chartSettings": {
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "name": "query - mouse-zone-distribution",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == 'scroll_position'\n| extend \n    page_name = tostring(customDimensions.page_name),\n    scroll_pct = toreal(customDimensions.scroll_percentage),\n    max_depth = toreal(customDimensions.max_scroll_depth)\n| summarize \n    AvgScrollDepth = round(avg(max_depth), 1),\n    MaxScrollDepth = round(max(max_depth), 1),\n    UniqueUsers = dcount(user_Id),\n    Reached100 = dcountif(user_Id, scroll_pct >= 99)\n    by page_name\n| extend \n    ['페이지 하단 도달률 (%)'] = round(100.0 * Reached100 / UniqueUsers, 1)\n| project \n    ['페이지'] = page_name,\n    ['평균 스크롤 깊이 (%)'] = AvgScrollDepth,\n    ['최대 스크롤 깊이 (%)'] = MaxScrollDepth,\n    ['고유 사용자'] = UniqueUsers,\n    ['페이지 하단 도달률 (%)']\n| order by ['평균 스크롤 깊이 (%)'] desc",
+        "size": 0,
+        "title": "페이지별 스크롤 깊이 분석",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "평균 스크롤 깊이 (%)",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "max": 100,
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "페이지 하단 도달률 (%)",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "max": 100,
+                "palette": "green"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - scroll-depth",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name in ('mouse_click', 'mouse_hover')\n| extend \n    page_name = tostring(customDimensions.page_name),\n    viewport_width = tolong(customDimensions.viewport_width),\n    viewport_height = tolong(customDimensions.viewport_height)\n| extend \n    DeviceType = case(\n        viewport_width < 768, '📱 Mobile',\n        viewport_width < 1024, '📱 Tablet',\n        viewport_width < 1920, '💻 Desktop',\n        '🖥️ Large Desktop'\n    ),\n    Resolution = strcat(tostring(viewport_width), 'x', tostring(viewport_height))\n| summarize \n    InteractionCount = count(),\n    UniqueUsers = dcount(user_Id),\n    CommonResolutions = make_set(Resolution, 5)\n    by DeviceType\n| project \n    ['디바이스 타입'] = DeviceType,\n    ['상호작용 수'] = InteractionCount,\n    ['고유 사용자'] = UniqueUsers,\n    ['주요 해상도'] = CommonResolutions\n| order by ['상호작용 수'] desc",
+        "size": 0,
+        "title": "디바이스 타입별 마우스 상호작용",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "piechart"
+      },
+      "name": "query - mouse-device-type",
+      "styleSettings": {
+        "margin": "10px"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
         "json": "---\n## ❌ 오류 및 예외\n"
       },
       "name": "text - 11",
