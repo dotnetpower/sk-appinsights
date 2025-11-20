@@ -127,20 +127,29 @@ def setup_telemetry(app=None):
             from azure.core.settings import settings as azure_settings
             from azure.core.tracing.ext.opentelemetry_span import \
                 OpenTelemetrySpan
+            
+            # Azure SDK에서 OpenTelemetry span을 사용하도록 설정
             azure_settings.tracing_implementation = OpenTelemetrySpan
-            logger.info("✅ Azure SDK tracing enabled → dependencies 테이블 (Cosmos DB)")
+            
+            # Cosmos DB dependency를 Application Map에 표시하기 위한 설정
+            # peer.service 속성이 자동으로 dependency target name이 됨
+            logger.info("✅ Azure SDK tracing enabled → dependencies 테이블 (Cosmos DB → COSMOS)")
         except ImportError:
             logger.warning("Azure Core tracing not available")
         
         logger.info("=" * 80)
         logger.info("📊 Application Insights 텔레메트리 테이블 매핑:")
         logger.info("  - requests: FastAPI HTTP 요청")
-        logger.info("  - dependencies: HTTPX API 호출, Cosmos DB 쿼리")
+        logger.info("  - dependencies: HTTPX API 호출, Cosmos DB 쿼리 (COSMOS)")
         logger.info("  - traces: Python logger 로그 (info/warning/error)")
         logger.info("  - pageViews: track_page_view() 호출")
         logger.info("  - customEvents: track_user_event() 호출")
         logger.info("  - customMetrics: OpenTelemetry Metrics")
         logger.info("  - exceptions: 예외 발생 시 자동 기록")
+        logger.info("")
+        logger.info("🗺️  Application Map:")
+        logger.info("  - etf-agent → COSMOS (Cosmos DB)")
+        logger.info("  - etf-agent → External APIs (yfinance, etc.)")
         logger.info("=" * 80)
     except Exception as e:
         logger.error(f"❌ Error configuring telemetry: {e}")

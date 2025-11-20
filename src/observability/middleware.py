@@ -28,13 +28,50 @@ class TracingMiddleware(BaseHTTPMiddleware):
         # 스팬 이름 생성
         span_name = f"{request.method} {request.url.path}"
         
-        with tracer.start_as_current_span(span_name) as span:
+        with tracer.start_as_current_span(
+            span_name,
+            kind=trace.SpanKind.SERVER
+        ) as span:
+            # Frontend-Backend 연결을 위한 추적 헤더 추출
+            traceparent = request.headers.get("traceparent")
+            request_id = request.headers.get("request-id")
+            request_context = request.headers.get("request-context")
+            
+            if traceparent:
+                logger.debug(f"📡 Received traceparent: {traceparent}")
+                span.set_attribute("http.traceparent", traceparent)
+            
+            if request_id:
+                logger.debug(f"📡 Received Request-Id: {request_id}")
+                span.set_attribute("http.request_id", request_id)
+            
+            if request_context:
+                logger.debug(f"📡 Received Request-Context: {request_context}")
+                span.set_attribute("http.request_context", request_context)
+                # Frontend 식별
+                if "frontend" in request_context.lower():
+                    span.set_attribute("client.type", "etf-agent-frontend")
+            
             # 요청 정보를 속성으로 추가
             span.set_attribute("http.method", request.method)
             span.set_attribute("http.url", str(request.url))
             span.set_attribute("http.path", request.url.path)
             span.set_attribute("http.scheme", request.url.scheme)
             span.set_attribute("http.host", request.url.hostname or "")
+            span.set_attribute("http.target", f"{request.url.path}?{request.url.query}" if request.url.query else request.url.path)
+            
+            # 클라이언트 정보
+            if request.client:
+                span.set_attribute("http.client.host", request.client.host)
+                span.set_attribute("http.client.port", request.client.port)
+                span.set_attribute("net.peer.ip", request.client.host)
+            
+            # User-Agent로 클라이언트 타입 추가 식별
+            user_agent = request.headers.get("user-agent", "")
+            if user_agent:
+                span.set_attribute("http.user_agent", user_agent)
+                if "mozilla" in user_agent.lower() or "chrome" in user_agent.lower():
+                    span.set_attribute("client.type", "browser")
             
             # 클라이언트 정보
             if request.client:

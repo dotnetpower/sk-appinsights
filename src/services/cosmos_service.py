@@ -11,6 +11,7 @@ from azure.cosmos.database import DatabaseProxy
 from azure.cosmos.exceptions import CosmosHttpResponseError
 from azure.identity import DefaultAzureCredential
 from opentelemetry import trace
+from opentelemetry.trace import SpanKind
 
 from ..config import get_settings
 
@@ -87,12 +88,17 @@ class CosmosDBService:
             return False
             
         with tracer.start_as_current_span(
-            "CosmosDB.save_etf_data",
+            "create_item",
+            kind=trace.SpanKind.CLIENT,
             attributes={
                 "db.system": "cosmosdb",
                 "db.operation": "create_item",
                 "db.name": self.database_name,
                 "db.cosmosdb.container": self.container_name,
+                "db.statement": "INSERT",
+                "peer.service": "COSMOS",
+                "component": "cosmosdb",
+                "az.namespace": "Microsoft.DocumentDB",
                 "symbol": symbol,
                 "item_type": "etf"
             }
@@ -122,12 +128,17 @@ class CosmosDBService:
             return False
             
         with tracer.start_as_current_span(
-            "CosmosDB.save_stock_data",
+            "create_item",
+            kind=trace.SpanKind.CLIENT,
             attributes={
                 "db.system": "cosmosdb",
                 "db.operation": "create_item",
                 "db.name": self.database_name,
                 "db.cosmosdb.container": self.container_name,
+                "db.statement": "INSERT",
+                "peer.service": "COSMOS",
+                "component": "cosmosdb",
+                "az.namespace": "Microsoft.DocumentDB",
                 "symbol": symbol,
                 "item_type": "stock"
             }
@@ -163,13 +174,17 @@ class CosmosDBService:
         """
         
         with tracer.start_as_current_span(
-            "CosmosDB.get_latest_data",
+            "query_items",
+            kind=trace.SpanKind.CLIENT,
             attributes={
                 "db.system": "cosmosdb",
                 "db.operation": "query_items",
                 "db.name": self.database_name,
                 "db.cosmosdb.container": self.container_name,
                 "db.statement": query,
+                "peer.service": "COSMOS",
+                "component": "cosmosdb",
+                "az.namespace": "Microsoft.DocumentDB",
                 "symbol": symbol,
                 "data_type": data_type
             }
@@ -214,13 +229,17 @@ class CosmosDBService:
         """
         
         with tracer.start_as_current_span(
-            "CosmosDB.get_all_etfs",
+            "query_items",
+            kind=trace.SpanKind.CLIENT,
             attributes={
                 "db.system": "cosmosdb",
                 "db.operation": "query_items",
                 "db.name": self.database_name,
                 "db.cosmosdb.container": self.container_name,
                 "db.statement": query,
+                "peer.service": "COSMOS",
+                "component": "cosmosdb",
+                "az.namespace": "Microsoft.DocumentDB",
                 "max_item_count": limit
             }
         ) as span:
@@ -302,13 +321,17 @@ class CosmosDBService:
         """
         
         with tracer.start_as_current_span(
-            "CosmosDB.search_data",
+            "query_items",
+            kind=trace.SpanKind.CLIENT,
             attributes={
                 "db.system": "cosmosdb",
                 "db.operation": "query_items",
                 "db.name": self.database_name,
                 "db.cosmosdb.container": self.container_name,
                 "db.statement": query,
+                "peer.service": "COSMOS",
+                "component": "cosmosdb",
+                "az.namespace": "Microsoft.DocumentDB",
                 "search_query": query_text,
                 "max_item_count": limit
             }

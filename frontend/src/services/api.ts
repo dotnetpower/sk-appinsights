@@ -13,8 +13,71 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
+    // Application Insights용 Request-Id 헤더 추가
+    // 이를 통해 Frontend → Backend 연결이 Application Map에 표시됨
   },
 });
+
+// Request Interceptor: 모든 요청에 추적 헤더 추가
+api.interceptors.request.use(
+  (config) => {
+    // Operation ID 생성 (Frontend-Backend 연결 추적용)
+    const operationId = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
+    // W3C Trace Context 표준 헤더
+    config.headers["traceparent"] = `00-${operationId.padEnd(
+      32,
+      "0"
+    )}-${operationId.substr(0, 16).padEnd(16, "0")}-01`;
+
+    // Application Insights 호환 헤더
+    config.headers["Request-Id"] = `|${operationId}.`;
+    config.headers["Request-Context"] = "appId=cid-v1:etf-agent-frontend";
+
+    // 디버깅용 로그
+    console.log(
+      `📡 API Request: ${config.method?.toUpperCase()} ${config.url}`,
+      {
+        operationId: operationId.substr(0, 16),
+      }
+    );
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response Interceptor: 응답 로깅
+api.interceptors.response.use(
+  (response) => {
+    console.log(
+      `✅ API Response: ${response.config.method?.toUpperCase()} ${
+        response.config.url
+      }`,
+      {
+        status: response.status,
+        duration: response.headers["x-response-time"] || "N/A",
+      }
+    );
+    return response;
+  },
+  (error) => {
+    console.error(
+      `❌ API Error: ${error.config?.method?.toUpperCase()} ${
+        error.config?.url
+      }`,
+      {
+        status: error.response?.status,
+        message: error.message,
+      }
+    );
+    return Promise.reject(error);
+  }
+);
 
 // ETF API
 export const etfApi = {

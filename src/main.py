@@ -13,6 +13,8 @@ from fastapi.staticfiles import StaticFiles
 from .api import analytics, chat, etf, news, stocks
 from .observability import (TracingMiddleware, initialize_metrics,
                             setup_telemetry)
+from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
 
 app = FastAPI(
     title="ETF Agent API",
@@ -24,7 +26,7 @@ app = FastAPI(
 )
 
 # Application Insights 텔레메트리 설정 (로깅 설정 전에 호출)
-# 이렇게 하면 configure_azure_monitor가 로깅 핸들러를 자동 설정
+# service.name을 명확히 지정하여 Application Map에 표시
 setup_telemetry(app)
 
 # 로깅 설정 (텔레메트리 설정 이후)
