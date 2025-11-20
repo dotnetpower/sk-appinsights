@@ -97,8 +97,21 @@ def setup_telemetry(app=None):
             connection_string=connection_string,
             enable_live_metrics=True,
             resource=resource,
-            logger_name="etf-agent",
         )
+        
+        # Python 로깅을 traces 테이블로 전송하기 위한 설정
+        # configure_azure_monitor가 자동으로 LoggingHandler를 설정하므로
+        # 루트 로거의 레벨을 INFO로 설정하여 로그가 수집되도록 함
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.INFO)
+        
+        # 애플리케이션 로거들도 INFO 레벨로 설정
+        app_loggers = ["etf-agent", "src", "uvicorn", "fastapi"]
+        for logger_name in app_loggers:
+            app_logger = logging.getLogger(logger_name)
+            app_logger.setLevel(logging.INFO)
+        
+        logger.info("✅ Logging handler configured → traces 테이블")
         
         # FastAPI 자동 계측 → requests 테이블
         if app:

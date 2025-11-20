@@ -14,14 +14,6 @@ from .api import analytics, chat, etf, news, stocks
 from .observability import (TracingMiddleware, initialize_metrics,
                             setup_telemetry)
 
-# 로깅 설정
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
-
 app = FastAPI(
     title="ETF Agent API",
     description="ETF 및 주식 종목 데이터 분석 API",
@@ -31,6 +23,18 @@ app = FastAPI(
     openapi_url="/openapi.json"  # OpenAPI schema
 )
 
+# Application Insights 텔레메트리 설정 (로깅 설정 전에 호출)
+# 이렇게 하면 configure_azure_monitor가 로깅 핸들러를 자동 설정
+setup_telemetry(app)
+
+# 로깅 설정 (텔레메트리 설정 이후)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    force=True  # 기존 핸들러를 유지하면서 설정 적용
+)
+logger = logging.getLogger(__name__)
+
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
@@ -39,9 +43,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Application Insights 텔레메트리 설정 (앱 생성 후)
-setup_telemetry(app)
 
 # 커스텀 메트릭 초기화 (Live Metrics용)
 initialize_metrics()
