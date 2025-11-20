@@ -15,6 +15,7 @@ import ETFList from "./components/ETFList";
 import StockDetail from "./components/StockDetail";
 import NewsFeed from "./components/NewsFeed";
 import ChatInterface from "./components/ChatInterface";
+import HeatmapAnalysis from "./components/HeatmapAnalysis";
 import { usePageTracking, getUserId } from "./hooks/usePageTracking";
 import { usePageVisibility, usePageFocus } from "./hooks/usePageVisibility";
 import { useMouseTracking, useScrollTracking } from "./hooks/useMouseTracking";
@@ -77,6 +78,7 @@ function App() {
     "Stock Detail",
     "News Feed",
     "AI Chat",
+    "Heatmap Analysis",
   ];
   const currentPage = pageNames[tabValue];
 
@@ -165,6 +167,7 @@ function App() {
             <Tab label="주식 상세" />
             <Tab label="뉴스 피드" />
             <Tab label="AI 채팅" />
+            <Tab label="히트맵 분석" />
           </Tabs>
         </AppBar>
 
@@ -183,6 +186,9 @@ function App() {
           </TabPanel>
           <TabPanel value={tabValue} index={4}>
             <ChatInterface />
+          </TabPanel>
+          <TabPanel value={tabValue} index={5}>
+            <HeatmapAnalysis />
           </TabPanel>
         </Container>
       </Box>

@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from ..agent.agent_service import get_agent_service
+from ..observability.utils import trace_span
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -23,6 +24,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/", response_model=ChatResponse)
+@trace_span(name="api.chat.chat", attributes={"endpoint": "/api/chat/", "method": "POST"})
 async def chat(request: ChatRequest) -> ChatResponse:
     """AI 에이전트와 채팅 (비스트리밍)"""
     try:
@@ -34,6 +36,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
 
 @router.post("/stream")
+@trace_span(name="api.chat.chat_stream", attributes={"endpoint": "/api/chat/stream", "method": "POST"})
 async def chat_stream(request: ChatRequest):
     """AI 에이전트와 채팅 (스트리밍)"""
     try:

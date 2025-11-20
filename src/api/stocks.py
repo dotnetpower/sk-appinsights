@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException, Query
 
 from ..services import get_cosmos_service, get_yfinance_client
+from ..observability.utils import trace_span
 
 router = APIRouter(prefix="/api/stocks", tags=["Stocks"])
 
@@ -21,6 +22,7 @@ _executor = ThreadPoolExecutor(max_workers=10)
 
 
 @router.get("/search")
+@trace_span(name="api.stocks.search_stocks", attributes={"endpoint": "/api/stocks/search"})
 async def search_stocks(q: str = Query(..., min_length=1)) -> Dict[str, Any]:
     """주식 심볼 검색"""
     yfinance = get_yfinance_client()
@@ -95,6 +97,7 @@ async def get_multiple_quotes(symbols: str = Query(..., description="콤마로 �
 
 
 @router.get("/{symbol}")
+@trace_span(name="api.stocks.get_stock_detail", attributes={"endpoint": "/api/stocks/{symbol}"})
 async def get_stock_detail(symbol: str) -> Dict[str, Any]:
     """주식 상세 정보 조회"""
     yfinance = get_yfinance_client()

@@ -7,11 +7,13 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException, Query
 
 from ..services import get_cosmos_service, get_yfinance_client
+from ..observability.utils import trace_span
 
 router = APIRouter(prefix="/api/etf", tags=["ETF"])
 
 
 @router.get("/list")
+@trace_span(name="api.etf.list_etfs", attributes={"endpoint": "/api/etf/list"})
 async def list_etfs(
     limit: int = Query(default=20, ge=1, le=100)
 ) -> List[Dict[str, Any]]:
@@ -21,6 +23,7 @@ async def list_etfs(
 
 
 @router.get("/{symbol}")
+@trace_span(name="api.etf.get_etf_detail", attributes={"endpoint": "/api/etf/{symbol}"})
 async def get_etf_detail(symbol: str) -> Dict[str, Any]:
     """ETF 상세 정보 조회"""
     yfinance = get_yfinance_client()
