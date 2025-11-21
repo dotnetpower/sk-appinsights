@@ -18,6 +18,7 @@
   - Docker 이미지 빌드
   - Azure Container Registry에 푸시
   - Azure Container App 배포/업데이트
+  - **🔒 Cosmos DB 네트워크 접근 자동 구성** (Container App IP를 방화벽 허용 목록에 추가)
 
 ---
 
@@ -82,6 +83,12 @@ az monitor app-insights component show \
 ```
 
 #### 3. Cosmos DB
+
+**`COSMOS_ACCOUNT_NAME`** (선택사항)
+```bash
+# Cosmos DB 계정 이름 (기본값: cosmosskappinsights)
+# 다른 이름을 사용하는 경우에만 설정 필요
+```
 
 **`COSMOS_ENDPOINT`**
 ```bash
@@ -425,6 +432,55 @@ az provider register --namespace Microsoft.OperationalInsights
 - 컨테이너 로그 확인 (워크플로우 로그에 출력됨)
 - 환경변수 누락 확인
 - `/health` 엔드포인트 구현 확인
+
+#### 6. Cosmos DB 연결 실패
+
+**증상**:
+```
+azure.cosmos.exceptions.CosmosHttpResponseError: Status code: 403
+Request originated from client IP through public internet.
+This is blocked by your Cosmos DB account firewall settings.
+```
+
+**원인**: Cosmos DB 방화벽이 Container App의 IP를 차단하고 있습니다.
+
+**해결**:
+
+워크플로우는 자동으로 Container App IP를 Cosmos DB 방화벽에 추가합니다. 
+만약 자동 추가가 실패한 경우:
+
+1. **Service Principal 권한 확인**
+   ```bash
+   # Service Principal에 Cosmos DB 수정 권한 부여
+   CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
+   
+   az role assignment create \
+     --assignee $CLIENT_ID \
+     --role "DocumentDB Account Contributor" \
+     --scope /subscriptions/<subscription-id>/resourceGroups/rg-sk-appinsights/providers/Microsoft.DocumentDB/databaseAccounts/cosmosskappinsights
+   ```
+
+2. **수동으로 IP 추가**
+   ```bash
+   # Container App Static IP 확인
+   ENV_NAME=$(az containerapp show \
+     --name etf-agent-app \
+     --resource-group rg-sk-appinsights \
+     --query "properties.environmentId" -o tsv | xargs basename)
+   
+   STATIC_IP=$(az containerapp env show \
+     --name $ENV_NAME \
+     --resource-group rg-sk-appinsights \
+     --query "properties.staticIp" -o tsv)
+   
+   # Cosmos DB 방화벽에 추가
+   az cosmosdb update \
+     --name cosmosskappinsights \
+     --resource-group rg-sk-appinsights \
+     --ip-range-filter "$STATIC_IP"
+   ```
+
+자세한 내용은 [COSMOS_DB_NETWORK_SETUP.md](./COSMOS_DB_NETWORK_SETUP.md) 참조.
 
 ---
 
