@@ -89,6 +89,7 @@ sk-appinsights/
 │   ├── USER_BEHAVIOR_ANALYTICS.md # 사용자 행동 분석 가이드
 │   ├── LIVE_METRICS_GUIDE.md     # Live Metrics 가이드
 │   ├── DASHBOARD_SETUP.md        # Azure 대시보드 설정
+│   ├── COSMOS_DB_NETWORK_SETUP.md # Cosmos DB 네트워크 설정
 │   ├── GUIDE.md                  # 개발 가이드
 │   └── WSL_NETWORK_SETUP.md      # WSL 네트워크 설정
 │
@@ -695,6 +696,7 @@ Application Insights 모니터링 및 분석을 위한 심화 가이드:
 - **[사용자 행동 분석 가이드](./USER_BEHAVIOR_ANALYTICS.md)** - 코호트 분석, 전환 깔때기, 사용자 세그먼트 분석
 - **[Live Metrics 가이드](./LIVE_METRICS_GUIDE.md)** - 실시간 모니터링 설정, 사용자 정의 메트릭, 트러블슈팅
 - **[대시보드 설정 가이드](./DASHBOARD_SETUP.md)** - Azure Portal 대시보드 및 Workbook 구성, KQL 쿼리 모음
+- **[Cosmos DB 네트워크 설정](./COSMOS_DB_NETWORK_SETUP.md)** - Cosmos DB 방화벽 설정 및 Container App IP 허용 가이드
 
 ---
 
