@@ -5,6 +5,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![Node Version](https://img.shields.io/badge/node-22-green.svg)](https://nodejs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
+[![Semantic Kernel](https://img.shields.io/badge/Semantic%20Kernel-1.14+-7B68EE.svg)](https://github.com/microsoft/semantic-kernel)
 [![React](https://img.shields.io/badge/React-19.2-61DAFB.svg?logo=react)](https://reactjs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Azure](https://img.shields.io/badge/Azure-Container%20App-0089D6?logo=microsoft-azure)](https://azure.microsoft.com/en-us/services/container-apps/)
