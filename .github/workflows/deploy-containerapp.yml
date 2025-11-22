@@ -153,80 +153,23 @@ jobs:
               "ALPHA_VANTAGE_KEY=secretref:alpha-vantage-key"
         fi
     
-    - name: 🔒 Configure Cosmos DB Network Access
+    - name: 🌐 Configure Cosmos DB Public Access
       run: |
         echo "=========================================="
-        echo "🔒 Cosmos DB 네트워크 접근 설정 중..."
+        echo "🌐 Cosmos DB Public Access 설정 중..."
         echo "=========================================="
         
-        # Container App Environment의 outbound IP 주소 가져오기
-        echo "📍 Container App Environment의 Static IP 주소 확인 중..."
-        ENV_NAME=$(az containerapp show \
-          --name ${{ env.CONTAINER_APP_NAME }} \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --query "properties.environmentId" -o tsv | xargs basename)
-        
-        STATIC_IP=$(az containerapp env show \
-          --name $ENV_NAME \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --query "properties.staticIp" -o tsv)
-        
-        echo "✅ Container App Environment: $ENV_NAME"
-        echo "✅ Static IP: $STATIC_IP"
-        
-        # Cosmos DB 현재 IP 규칙 확인
-        echo ""
-        echo "📋 현재 Cosmos DB IP 규칙 확인 중..."
-        CURRENT_IPS=$(az cosmosdb show \
+        # Cosmos DB를 Public Access로 설정 (모든 IP 허용)
+        echo "🔓 Cosmos DB를 Public Access로 변경 중..."
+        az cosmosdb update \
           --name ${{ env.COSMOS_ACCOUNT_NAME }} \
           --resource-group ${{ env.RESOURCE_GROUP }} \
-          --query "ipRules[].ipAddressOrRange" -o tsv)
+          --enable-public-network true
         
-        if [ -z "$CURRENT_IPS" ]; then
-          echo "⚠️  현재 IP 규칙이 없습니다."
-        else
-          echo "현재 허용된 IP 목록:"
-          echo "$CURRENT_IPS"
-        fi
-        
-        # Container App IP가 이미 포함되어 있는지 확인
-        if echo "$CURRENT_IPS" | grep -q "$STATIC_IP"; then
-          echo "✅ Container App IP ($STATIC_IP)가 이미 허용 목록에 있습니다."
-        else
-          echo ""
-          echo "➕ Container App IP를 Cosmos DB 방화벽 규칙에 추가 중..."
-          
-          # 기존 IP와 새 IP를 결합
-          if [ -z "$CURRENT_IPS" ]; then
-            NEW_IP_RULES="$STATIC_IP"
-          else
-            # 기존 IP들을 배열로 변환
-            IFS=$'\n' read -rd '' -a IP_ARRAY <<< "$CURRENT_IPS" || true
-            NEW_IP_RULES="$STATIC_IP"
-            for ip in "${IP_ARRAY[@]}"; do
-              NEW_IP_RULES="$NEW_IP_RULES,$ip"
-            done
-          fi
-          
-          # Cosmos DB 방화벽 규칙 업데이트
-          az cosmosdb update \
-            --name ${{ env.COSMOS_ACCOUNT_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --ip-range-filter "$NEW_IP_RULES"
-          
-          echo "✅ Container App IP ($STATIC_IP)를 방화벽 규칙에 추가했습니다."
-        fi
-        
-        # 최종 확인
+        echo "✅ Cosmos DB Public Access 설정 완료!"
         echo ""
-        echo "📋 업데이트된 Cosmos DB IP 규칙:"
-        az cosmosdb show \
-          --name ${{ env.COSMOS_ACCOUNT_NAME }} \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --query "ipRules[].ipAddressOrRange" -o tsv
-        
-        echo ""
-        echo "✅ Cosmos DB 네트워크 설정 완료!"
+        echo "⚠️  참고: Cosmos DB가 공개 네트워크에서 접근 가능하도록 설정되었습니다."
+        echo "   보안을 위해 Azure AD 인증을 사용하고 있습니다."
     
     - name: 🎉 Get App URL
       run: |
