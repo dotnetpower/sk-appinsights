@@ -18,6 +18,11 @@ import {
   DialogContentText,
   DialogActions,
   IconButton,
+  Card,
+  CardContent,
+  Grid,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Refresh, Delete } from "@mui/icons-material";
 import { etfApi } from "../services/api";
@@ -35,6 +40,8 @@ const ETFList: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [symbolToDelete, setSymbolToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   useEffect(() => {
     loadETFs();
@@ -149,12 +156,15 @@ const ETFList: React.FC = () => {
         justifyContent="space-between"
         alignItems="center"
         mb={3}
+        flexDirection={{ xs: "column", sm: "row" }}
+        gap={{ xs: 2, sm: 0 }}
       >
-        <Typography variant="h4">ETF 목록</Typography>
+        <Typography variant={isMobile ? "h5" : "h4"}>ETF 목록</Typography>
         <Button
           variant="contained"
           startIcon={<Refresh />}
           onClick={() => loadETFs()}
+          fullWidth={isMobile}
         >
           새로고침
         </Button>
@@ -167,7 +177,161 @@ const ETFList: React.FC = () => {
             데이터가 저장됩니다.
           </Typography>
         </Paper>
+      ) : isMobile ? (
+        // 모바일 카드 레이아웃
+        <Grid container spacing={2}>
+          {etfs.map((etf) => {
+            const quote = etf.data?.quote || {};
+            const profile = etf.data?.profile || {};
+            const change = quote.d || 0;
+            const percentChange = quote.dp || 0;
+            const isPositive = change >= 0;
+
+            const formatMarketCap = (value: number) => {
+              if (!value) return "N/A";
+              if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+              if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+              if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+              return `$${value.toFixed(0)}`;
+            };
+
+            const formatDividendYield = (value: number) => {
+              if (!value) return "N/A";
+              return `${value.toFixed(2)}%`;
+            };
+
+            const formatYTDReturn = (value: number) => {
+              if (value === null || value === undefined) return "N/A";
+              return `${(value * 100).toFixed(2)}%`;
+            };
+
+            return (
+              <Grid item xs={12} key={etf.symbol}>
+                <Card>
+                  <CardContent>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      mb={2}
+                    >
+                      <Box>
+                        <Typography variant="h6" fontWeight="bold">
+                          {etf.symbol}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {profile.name || "-"}
+                        </Typography>
+                      </Box>
+                      <Box textAlign="right">
+                        <Typography variant="h6" fontWeight="medium">
+                          ${(quote.c || 0).toFixed(2)}
+                        </Typography>
+                        <Chip
+                          label={`${isPositive ? "+" : ""}${percentChange.toFixed(
+                            2
+                          )}%`}
+                          color={isPositive ? "success" : "error"}
+                          size="small"
+                        />
+                      </Box>
+                    </Box>
+
+                    <Grid container spacing={1} mb={2}>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="textSecondary">
+                          변동
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color={isPositive ? "success.main" : "error.main"}
+                        >
+                          {isPositive ? "+" : ""}
+                          {change.toFixed(2)}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="textSecondary">
+                          YTD 수익률
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color={
+                            profile.ytdReturn && profile.ytdReturn > 0
+                              ? "success.main"
+                              : profile.ytdReturn && profile.ytdReturn < 0
+                              ? "error.main"
+                              : "textSecondary"
+                          }
+                        >
+                          {formatYTDReturn(profile.ytdReturn)}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="textSecondary">
+                          시가총액
+                        </Typography>
+                        <Typography variant="body2">
+                          {formatMarketCap(profile.marketCap)}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="textSecondary">
+                          배당율
+                        </Typography>
+                        <Typography variant="body2" color="primary">
+                          {formatDividendYield(
+                            profile.dividendYield ||
+                              profile.trailingAnnualDividendYield
+                          )}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      display="block"
+                      mb={1}
+                    >
+                      업데이트:{" "}
+                      {new Date(etf.timestamp).toLocaleString("ko-KR", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Typography>
+
+                    <Box display="flex" gap={1}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleRefresh(etf.symbol)}
+                        disabled={refreshingSymbol === etf.symbol}
+                        fullWidth
+                      >
+                        {refreshingSymbol === etf.symbol
+                          ? "갱신중..."
+                          : "새로고침"}
+                      </Button>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDeleteClick(etf.symbol)}
+                        title="삭제"
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
       ) : (
+        // 데스크톱 테이블 레이아웃
         <TableContainer component={Paper}>
           <Table>
             <TableHead>

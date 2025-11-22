@@ -18,6 +18,8 @@ import {
   TableHead,
   TableRow,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { trackEvent } from "../services/analytics";
 
@@ -46,6 +48,8 @@ const getTextColor = (value: number): string => {
 const HeatmapAnalysis: React.FC = () => {
   const [selectedDataset, setSelectedDataset] = useState<string>("business");
   const [heatmapData, setHeatmapData] = useState<HeatmapData | null>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   // 샘플 데이터 생성
   useEffect(() => {
@@ -153,18 +157,18 @@ const HeatmapAnalysis: React.FC = () => {
   return (
     <Box>
       {/* 헤더 */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
-            <Typography variant="h4" gutterBottom>
+            <Typography variant={isMobile ? "h5" : "h4"} gutterBottom>
               📊 Business Heatmap Analysis
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" fontSize={{ xs: "0.8rem", md: "0.875rem" }}>
               제품 및 질문별 성과 분석 히트맵
             </Typography>
           </Grid>
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
+            <FormControl fullWidth size={isMobile ? "small" : "medium"}>
               <InputLabel>데이터셋 선택</InputLabel>
               <Select
                 value={selectedDataset}
@@ -181,7 +185,7 @@ const HeatmapAnalysis: React.FC = () => {
 
       {/* 범례 */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="subtitle2" gutterBottom>
+        <Typography variant="subtitle2" gutterBottom fontSize={{ xs: "0.875rem", md: "1rem" }}>
           Rankings
         </Typography>
         <Grid container spacing={1} alignItems="center">
@@ -192,7 +196,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(10.0),
                 color: getTextColor(10.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item>
@@ -202,7 +208,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(8.0),
                 color: getTextColor(8.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item>
@@ -212,7 +220,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(5.0),
                 color: getTextColor(5.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item>
@@ -222,7 +232,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(3.0),
                 color: getTextColor(3.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item>
@@ -232,15 +244,17 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(0.0),
                 color: getTextColor(0.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
         </Grid>
       </Paper>
 
       {/* 히트맵 테이블 */}
-      <TableContainer component={Paper}>
-        <Table size="small" sx={{ minWidth: 1200 }}>
+      <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+        <Table size="small" sx={{ minWidth: { xs: 600, md: 1200 } }}>
           <TableHead>
             <TableRow>
               <TableCell
@@ -250,6 +264,8 @@ const HeatmapAnalysis: React.FC = () => {
                   position: "sticky",
                   left: 0,
                   zIndex: 2,
+                  fontSize: { xs: "0.75rem", md: "0.875rem" },
+                  padding: { xs: "8px 4px", md: "16px" },
                 }}
               >
                 Questions
@@ -261,7 +277,9 @@ const HeatmapAnalysis: React.FC = () => {
                   sx={{
                     fontWeight: "bold",
                     bgcolor: "background.default",
-                    minWidth: 100,
+                    minWidth: { xs: 60, md: 100 },
+                    fontSize: { xs: "0.7rem", md: "0.875rem" },
+                    padding: { xs: "8px 4px", md: "16px" },
                   }}
                 >
                   {product}
@@ -276,6 +294,8 @@ const HeatmapAnalysis: React.FC = () => {
                   position: "sticky",
                   right: 0,
                   zIndex: 2,
+                  fontSize: { xs: "0.7rem", md: "0.875rem" },
+                  padding: { xs: "8px 4px", md: "16px" },
                 }}
               >
                 Total Average
@@ -296,6 +316,8 @@ const HeatmapAnalysis: React.FC = () => {
                     position: "sticky",
                     left: 0,
                     zIndex: 1,
+                    fontSize: { xs: "0.7rem", md: "0.875rem" },
+                    padding: { xs: "8px 4px", md: "16px" },
                   }}
                 >
                   {question}
@@ -308,7 +330,8 @@ const HeatmapAnalysis: React.FC = () => {
                       bgcolor: getColor(value),
                       color: getTextColor(value),
                       fontWeight: "bold",
-                      fontSize: "1.1rem",
+                      fontSize: { xs: "0.8rem", md: "1.1rem" },
+                      padding: { xs: "8px 4px", md: "16px" },
                       transition: "all 0.3s",
                       "&:hover": {
                         transform: "scale(1.05)",
@@ -324,7 +347,8 @@ const HeatmapAnalysis: React.FC = () => {
                   align="center"
                   sx={{
                     fontWeight: "bold",
-                    fontSize: "1.1rem",
+                    fontSize: { xs: "0.8rem", md: "1.1rem" },
+                    padding: { xs: "8px 4px", md: "16px" },
                     bgcolor: getColor(heatmapData.questionAverages[qIdx]),
                     color: getTextColor(heatmapData.questionAverages[qIdx]),
                     position: "sticky",
@@ -346,6 +370,8 @@ const HeatmapAnalysis: React.FC = () => {
                   position: "sticky",
                   left: 0,
                   zIndex: 2,
+                  fontSize: { xs: "0.7rem", md: "0.875rem" },
+                  padding: { xs: "8px 4px", md: "16px" },
                 }}
               >
                 Total Average
@@ -358,7 +384,8 @@ const HeatmapAnalysis: React.FC = () => {
                   align="center"
                   sx={{
                     fontWeight: "bold",
-                    fontSize: "1.1rem",
+                    fontSize: { xs: "0.8rem", md: "1.1rem" },
+                    padding: { xs: "8px 4px", md: "16px" },
                     bgcolor: getColor(avg),
                     color: getTextColor(avg),
                   }}
@@ -370,7 +397,8 @@ const HeatmapAnalysis: React.FC = () => {
                 align="center"
                 sx={{
                   fontWeight: "bold",
-                  fontSize: "1.2rem",
+                  fontSize: { xs: "0.9rem", md: "1.2rem" },
+                  padding: { xs: "8px 4px", md: "16px" },
                   bgcolor: "secondary.main",
                   color: "secondary.contrastText",
                   position: "sticky",
@@ -393,7 +421,7 @@ const HeatmapAnalysis: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom color="primary">
+              <Typography variant="h6" gutterBottom color="primary" fontSize={{ xs: "1rem", md: "1.25rem" }}>
                 🏆 최고 성과 제품
               </Typography>
               {heatmapData.productAverages
@@ -405,7 +433,7 @@ const HeatmapAnalysis: React.FC = () => {
                 .slice(0, 3)
                 .map((item, idx) => (
                   <Box key={idx} sx={{ mb: 1 }}>
-                    <Typography variant="body2">
+                    <Typography variant="body2" fontSize={{ xs: "0.8rem", md: "0.875rem" }}>
                       {idx + 1}. {item.product}:{" "}
                       <strong style={{ color: getColor(item.avg) }}>
                         {item.avg.toFixed(2)}
@@ -420,7 +448,7 @@ const HeatmapAnalysis: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom color="warning.main">
+              <Typography variant="h6" gutterBottom color="warning.main" fontSize={{ xs: "1rem", md: "1.25rem" }}>
                 📉 개선 필요 제품
               </Typography>
               {heatmapData.productAverages
@@ -432,7 +460,7 @@ const HeatmapAnalysis: React.FC = () => {
                 .slice(0, 3)
                 .map((item, idx) => (
                   <Box key={idx} sx={{ mb: 1 }}>
-                    <Typography variant="body2">
+                    <Typography variant="body2" fontSize={{ xs: "0.8rem", md: "0.875rem" }}>
                       {idx + 1}. {item.product}:{" "}
                       <strong style={{ color: getColor(item.avg) }}>
                         {item.avg.toFixed(2)}
@@ -447,10 +475,10 @@ const HeatmapAnalysis: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom color="success.main">
+              <Typography variant="h6" gutterBottom color="success.main" fontSize={{ xs: "1rem", md: "1.25rem" }}>
                 ✨ 핵심 인사이트
               </Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }} fontSize={{ xs: "0.8rem", md: "0.875rem" }}>
                 • 전체 평균:{" "}
                 <strong>
                   {(
@@ -459,7 +487,7 @@ const HeatmapAnalysis: React.FC = () => {
                   ).toFixed(2)}
                 </strong>
               </Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }} fontSize={{ xs: "0.8rem", md: "0.875rem" }}>
                 • 최고 질문:{" "}
                 <strong>
                   {
@@ -471,7 +499,7 @@ const HeatmapAnalysis: React.FC = () => {
                   }
                 </strong>
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" fontSize={{ xs: "0.8rem", md: "0.875rem" }}>
                 • 최저 질문:{" "}
                 <strong>
                   {

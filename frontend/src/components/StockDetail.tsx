@@ -13,6 +13,8 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Search, AccountBalance, History } from "@mui/icons-material";
 import {
@@ -38,6 +40,8 @@ const StockDetail: React.FC = () => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [timeRange, setTimeRange] = useState<TimeRange>("1M");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // localStorage에서 최근 검색 기록 로드
   useEffect(() => {
@@ -166,24 +170,26 @@ const StockDetail: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant={isMobile ? "h5" : "h4"} gutterBottom>
         주식 상세 조회
       </Typography>
 
-      <Box display="flex" gap={2} mb={2}>
+      <Box display="flex" gap={2} mb={2} flexDirection={{ xs: "column", sm: "row" }}>
         <TextField
           fullWidth
           label="주식/ETF 심볼 (예: AAPL, MSFT, SPY, QQQ)"
           value={symbol}
           onChange={(e) => setSymbol(e.target.value.toUpperCase())}
           onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+          size={isMobile ? "small" : "medium"}
         />
         <Button
           variant="contained"
           startIcon={<Search />}
           onClick={() => handleSearch()}
           disabled={loading || !symbol}
-          sx={{ minWidth: 100, whiteSpace: "nowrap" }}
+          sx={{ minWidth: { xs: "100%", sm: 100 }, whiteSpace: "nowrap" }}
+          size={isMobile ? "small" : "medium"}
         >
           조회
         </Button>
@@ -324,6 +330,8 @@ const StockDetail: React.FC = () => {
                 justifyContent="space-between"
                 alignItems="center"
                 mb={2}
+                flexDirection={{ xs: "column", sm: "row" }}
+                gap={{ xs: 2, sm: 0 }}
               >
                 <Typography variant="h6">가격 차트</Typography>
                 <ToggleButtonGroup
@@ -331,14 +339,15 @@ const StockDetail: React.FC = () => {
                   exclusive
                   onChange={handleTimeRangeChange}
                   size="small"
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
                 >
-                  <ToggleButton value="1D">1일</ToggleButton>
-                  <ToggleButton value="1W">1주</ToggleButton>
-                  <ToggleButton value="1M">1개월</ToggleButton>
-                  <ToggleButton value="1Y">1년</ToggleButton>
+                  <ToggleButton value="1D" sx={{ flex: { xs: 1, sm: "initial" } }}>1일</ToggleButton>
+                  <ToggleButton value="1W" sx={{ flex: { xs: 1, sm: "initial" } }}>1주</ToggleButton>
+                  <ToggleButton value="1M" sx={{ flex: { xs: 1, sm: "initial" } }}>1개월</ToggleButton>
+                  <ToggleButton value="1Y" sx={{ flex: { xs: 1, sm: "initial" } }}>1년</ToggleButton>
                 </ToggleButtonGroup>
               </Box>
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={isMobile ? 300 : 400}>
                 <ComposedChart
                   data={chartData}
                   margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
@@ -354,12 +363,20 @@ const StockDetail: React.FC = () => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#999" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: isMobile ? 9 : 11 }}
+                    stroke="#999"
+                    angle={isMobile ? -45 : 0}
+                    textAnchor={isMobile ? "end" : "middle"}
+                    height={isMobile ? 60 : 30}
+                  />
                   <YAxis
                     domain={["auto", "auto"]}
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: isMobile ? 9 : 11 }}
                     stroke="#999"
                     tickFormatter={(value) => `$${value.toFixed(0)}`}
+                    width={isMobile ? 40 : 60}
                   />
                   <Tooltip
                     content={({ active, payload }) => {

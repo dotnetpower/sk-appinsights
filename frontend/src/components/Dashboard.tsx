@@ -7,6 +7,8 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { TrendingUp, TrendingDown } from "@mui/icons-material";
 import { stocksApi, newsApi } from "../services/api";
@@ -22,6 +24,8 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [marketStats, setMarketStats] = useState<MarketStat[]>([]);
   const [recentNews, setRecentNews] = useState<any[]>([]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     loadDashboardData();
@@ -97,37 +101,38 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant={isMobile ? "h5" : "h4"} gutterBottom>
         시장 개요
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 2, md: 3 }}>
         {marketStats.map((stat, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
             <Card>
-              <CardContent>
+              <CardContent sx={{ padding: { xs: 2, md: 2 } }}>
                 <Box
                   display="flex"
                   alignItems="center"
                   justifyContent="space-between"
                 >
                   <Box>
-                    <Typography color="textSecondary" gutterBottom>
+                    <Typography color="textSecondary" gutterBottom fontSize={{ xs: "0.875rem", md: "1rem" }}>
                       {stat.label}
                     </Typography>
-                    <Typography variant="h5">{stat.value}</Typography>
+                    <Typography variant={isMobile ? "h6" : "h5"}>{stat.value}</Typography>
                     <Typography
                       variant="body2"
                       color={stat.isPositive ? "success.main" : "error.main"}
+                      fontSize={{ xs: "0.8rem", md: "0.875rem" }}
                     >
                       {stat.change}
                     </Typography>
                   </Box>
                   <Box>
                     {stat.isPositive ? (
-                      <TrendingUp fontSize="large" color="success" />
+                      <TrendingUp fontSize={isMobile ? "medium" : "large"} color="success" />
                     ) : (
-                      <TrendingDown fontSize="large" color="error" />
+                      <TrendingDown fontSize={isMobile ? "medium" : "large"} color="error" />
                     )}
                   </Box>
                 </Box>
@@ -138,20 +143,20 @@ const Dashboard: React.FC = () => {
       </Grid>
 
       <Box mt={4}>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant={isMobile ? "h6" : "h5"} gutterBottom>
           최근 뉴스
         </Typography>
         <Grid container spacing={2}>
           {recentNews.map((news, index) => (
             <Grid item xs={12} key={index}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="h6" gutterBottom>
+              <Paper sx={{ p: { xs: 1.5, md: 2 } }}>
+                <Typography variant="h6" gutterBottom fontSize={{ xs: "1rem", md: "1.25rem" }}>
                   {news.headline}
                 </Typography>
-                <Typography variant="body2" color="textSecondary" paragraph>
+                <Typography variant="body2" color="textSecondary" paragraph fontSize={{ xs: "0.8rem", md: "0.875rem" }}>
                   {news.summary}
                 </Typography>
-                <Typography variant="caption" color="textSecondary">
+                <Typography variant="caption" color="textSecondary" fontSize={{ xs: "0.7rem", md: "0.75rem" }}>
                   출처: {news.source} |{" "}
                   {new Date(news.datetime * 1000).toLocaleString("ko-KR")}
                 </Typography>

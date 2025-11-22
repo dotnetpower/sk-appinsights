@@ -12,8 +12,11 @@ import {
   IconButton,
   Switch,
   FormControlLabel,
+  Drawer,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import { Send, Refresh } from "@mui/icons-material";
+import { Send, Refresh, Menu as MenuIcon } from "@mui/icons-material";
 import { chatApi } from "../services/api";
 
 interface Message {
@@ -27,7 +30,10 @@ const ChatInterface: React.FC = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [useStreaming, setUseStreaming] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -103,10 +109,65 @@ const ChatInterface: React.FC = () => {
     }
   };
 
+  // 예시 질문 컴포넌트
+  const ExampleQuestions = () => (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        💡 예시 질문
+      </Typography>
+      <List dense>
+        {[
+          "AAPL 주식의 현재 가격은?",
+          "SPY ETF에 대해 알려줘",
+          "TSLA 주식 정보를 보여줘",
+          "마이크로소프트 회사 정보",
+          "QQQ ETF는 어떤 종목들로 구성되어 있어?",
+          "애플 주식 최근 뉴스는?",
+          "NVDA 주가 추세를 분석해줘",
+          "테슬라를 검색해줘",
+        ].map((question, index) => (
+          <ListItem
+            key={index}
+            button
+            onClick={() => {
+              setInput(question);
+              if (isMobile) setSidebarOpen(false);
+            }}
+            sx={{
+              borderRadius: 1,
+              mb: 1,
+              "&:hover": {
+                bgcolor: "action.hover",
+              },
+            }}
+          >
+            <Typography variant="body2">{question}</Typography>
+          </ListItem>
+        ))}
+      </List>
+
+      <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: "divider" }}>
+        <Typography variant="subtitle2" gutterBottom>
+          ℹ️ 사용 가능한 기능
+        </Typography>
+        <Typography variant="caption" color="textSecondary" component="div">
+          • 주식 가격 조회
+          <br />
+          • ETF 정보 검색
+          <br />
+          • 회사 프로필 확인
+          <br />
+          • 최신 뉴스 조회
+          <br />• 주가 추세 분석
+        </Typography>
+      </Box>
+    </Box>
+  );
+
   return (
     <Box
       sx={{
-        height: "calc(100vh - 100px)",
+        height: { xs: "calc(100vh - 120px)", md: "calc(100vh - 100px)" },
         display: "flex",
         flexDirection: "column",
         position: "relative",
@@ -119,9 +180,30 @@ const ChatInterface: React.FC = () => {
         alignItems="center"
         mb={2}
         sx={{ flexShrink: 0 }}
+        flexWrap="wrap"
+        gap={1}
       >
-        <Typography variant="h4">AI 에이전트 채팅</Typography>
-        <Box display="flex" gap={2} alignItems="center">
+        <Box display="flex" alignItems="center" gap={1}>
+          {isMobile && (
+            <IconButton
+              onClick={() => setSidebarOpen(true)}
+              color="primary"
+              size="small"
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+          <Typography variant={isMobile ? "h5" : "h4"}>
+            AI 에이전트 채팅
+          </Typography>
+        </Box>
+        <Box
+          display="flex"
+          gap={2}
+          alignItems="center"
+          flexDirection={{ xs: "column", sm: "row" }}
+          width={{ xs: "100%", sm: "auto" }}
+        >
           <FormControlLabel
             control={
               <Switch
@@ -131,12 +213,15 @@ const ChatInterface: React.FC = () => {
               />
             }
             label={useStreaming ? "스트리밍 모드" : "일반 모드"}
+            sx={{ m: 0 }}
           />
           <Button
             variant="outlined"
             startIcon={<Refresh />}
             onClick={handleReset}
             disabled={loading}
+            fullWidth={isMobile}
+            size={isMobile ? "small" : "medium"}
           >
             대화 리셋
           </Button>
@@ -159,7 +244,7 @@ const ChatInterface: React.FC = () => {
             sx={{
               flexGrow: 1,
               overflow: "auto",
-              p: 3,
+              p: { xs: 1, sm: 2, md: 3 },
               pb: 10, // 하단 입력창 공간 확보
             }}
           >
@@ -170,7 +255,11 @@ const ChatInterface: React.FC = () => {
                 alignItems="center"
                 height="100%"
               >
-                <Typography color="textSecondary" variant="h6">
+                <Typography
+                  color="textSecondary"
+                  variant={isMobile ? "body1" : "h6"}
+                  textAlign="center"
+                >
                   주식과 ETF에 대해 무엇이든 물어보세요! 👉
                 </Typography>
               </Box>
@@ -183,6 +272,7 @@ const ChatInterface: React.FC = () => {
                       justifyContent:
                         message.role === "user" ? "flex-end" : "flex-start",
                       mb: 2,
+                      px: { xs: 0, sm: 2 },
                     }}
                   >
                     <Box
@@ -191,7 +281,7 @@ const ChatInterface: React.FC = () => {
                       flexDirection={
                         message.role === "user" ? "row-reverse" : "row"
                       }
-                      maxWidth="80%"
+                      maxWidth={{ xs: "95%", sm: "80%" }}
                     >
                       <Avatar
                         sx={{
@@ -200,13 +290,16 @@ const ChatInterface: React.FC = () => {
                               ? "primary.main"
                               : "secondary.main",
                           flexShrink: 0,
+                          width: { xs: 32, sm: 40 },
+                          height: { xs: 32, sm: 40 },
+                          fontSize: { xs: "0.9rem", sm: "1rem" },
                         }}
                       >
                         {message.role === "user" ? "U" : "AI"}
                       </Avatar>
                       <Paper
                         sx={{
-                          p: 2,
+                          p: { xs: 1.5, sm: 2 },
                           bgcolor:
                             message.role === "user"
                               ? "primary.dark"
@@ -215,7 +308,10 @@ const ChatInterface: React.FC = () => {
                       >
                         <Typography
                           variant="body1"
-                          sx={{ whiteSpace: "pre-wrap" }}
+                          sx={{
+                            whiteSpace: "pre-wrap",
+                            fontSize: { xs: "0.9rem", sm: "1rem" },
+                          }}
                         >
                           {message.content}
                         </Typography>
@@ -255,7 +351,7 @@ const ChatInterface: React.FC = () => {
               bottom: 0,
               left: 0,
               right: 0,
-              p: 2,
+              p: { xs: 1, sm: 2 },
               bgcolor: "background.paper",
               borderTop: 1,
               borderColor: "divider",
@@ -275,6 +371,7 @@ const ChatInterface: React.FC = () => {
                 maxRows={4}
                 disabled={loading}
                 variant="outlined"
+                size={isMobile ? "small" : "medium"}
               />
               <IconButton
                 color="primary"
@@ -284,6 +381,8 @@ const ChatInterface: React.FC = () => {
                   alignSelf: "flex-end",
                   bgcolor: "primary.main",
                   color: "white",
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 },
                   "&:hover": {
                     bgcolor: "primary.dark",
                   },
@@ -292,70 +391,41 @@ const ChatInterface: React.FC = () => {
                   },
                 }}
               >
-                <Send />
+                <Send fontSize={isMobile ? "small" : "medium"} />
               </IconButton>
             </Box>
           </Box>
         </Paper>
 
-        {/* 사이드바 - 예시 질문 */}
-        <Paper
+        {/* 데스크톱 사이드바 */}
+        {!isMobile && (
+          <Paper
+            sx={{
+              width: "300px",
+              p: 2,
+              flexShrink: 0,
+              overflow: "auto",
+            }}
+          >
+            <ExampleQuestions />
+          </Paper>
+        )}
+
+        {/* 모바일 사이드바 (Drawer) */}
+        <Drawer
+          anchor="right"
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
           sx={{
-            width: "300px",
-            p: 2,
-            flexShrink: 0,
-            overflow: "auto",
+            "& .MuiDrawer-paper": {
+              width: "80%",
+              maxWidth: 300,
+              p: 2,
+            },
           }}
         >
-          <Typography variant="h6" gutterBottom>
-            💡 예시 질문
-          </Typography>
-          <List dense>
-            {[
-              "AAPL 주식의 현재 가격은?",
-              "SPY ETF에 대해 알려줘",
-              "TSLA 주식 정보를 보여줘",
-              "마이크로소프트 회사 정보",
-              "QQQ ETF는 어떤 종목들로 구성되어 있어?",
-              "애플 주식 최근 뉴스는?",
-              "NVDA 주가 추세를 분석해줘",
-              "테슬라를 검색해줘",
-            ].map((question, index) => (
-              <ListItem
-                key={index}
-                button
-                onClick={() => {
-                  setInput(question);
-                }}
-                sx={{
-                  borderRadius: 1,
-                  mb: 1,
-                  "&:hover": {
-                    bgcolor: "action.hover",
-                  },
-                }}
-              >
-                <Typography variant="body2">{question}</Typography>
-              </ListItem>
-            ))}
-          </List>
-
-          <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: "divider" }}>
-            <Typography variant="subtitle2" gutterBottom>
-              ℹ️ 사용 가능한 기능
-            </Typography>
-            <Typography variant="caption" color="textSecondary" component="div">
-              • 주식 가격 조회
-              <br />
-              • ETF 정보 검색
-              <br />
-              • 회사 프로필 확인
-              <br />
-              • 최신 뉴스 조회
-              <br />• 주가 추세 분석
-            </Typography>
-          </Box>
-        </Paper>
+          <ExampleQuestions />
+        </Drawer>
       </Box>
     </Box>
   );

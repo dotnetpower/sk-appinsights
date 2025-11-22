@@ -18,6 +18,8 @@ import {
   ToggleButton,
   Card,
   CardMedia,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Public, TrendingUp } from "@mui/icons-material";
 import { newsApi } from "../services/api";
@@ -38,6 +40,8 @@ const NewsFeed: React.FC = () => {
   const [newsType, setNewsType] = useState<"market" | "global">("global");
   const [category, setCategory] = useState("general");
   const [sources, setSources] = useState("all");
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -96,27 +100,36 @@ const NewsFeed: React.FC = () => {
         justifyContent="space-between"
         alignItems="center"
         mb={3}
+        flexDirection={{ xs: "column", sm: "row" }}
+        gap={2}
       >
-        <Typography variant="h4">뉴스 피드</Typography>
-        <Box display="flex" gap={2}>
+        <Typography variant={isMobile ? "h5" : "h4"}>뉴스 피드</Typography>
+        <Box
+          display="flex"
+          gap={2}
+          flexDirection={{ xs: "column", sm: "row" }}
+          width={{ xs: "100%", sm: "auto" }}
+        >
           <ToggleButtonGroup
             value={newsType}
             exclusive
             onChange={handleNewsTypeChange}
             aria-label="뉴스 타입"
+            fullWidth={isMobile}
+            size={isMobile ? "small" : "medium"}
           >
             <ToggleButton value="global" aria-label="글로벌 뉴스">
-              <Public sx={{ mr: 1 }} />
-              글로벌
+              <Public sx={{ mr: { xs: 0, sm: 1 } }} />
+              {!isMobile && "글로벌"}
             </ToggleButton>
             <ToggleButton value="market" aria-label="시장 뉴스">
-              <TrendingUp sx={{ mr: 1 }} />
-              시장
+              <TrendingUp sx={{ mr: { xs: 0, sm: 1 } }} />
+              {!isMobile && "시장"}
             </ToggleButton>
           </ToggleButtonGroup>
 
           {newsType === "market" ? (
-            <FormControl sx={{ minWidth: 150 }}>
+            <FormControl sx={{ minWidth: { xs: "100%", sm: 150 } }} size={isMobile ? "small" : "medium"}>
               <InputLabel>카테고리</InputLabel>
               <Select
                 value={category}
@@ -130,7 +143,7 @@ const NewsFeed: React.FC = () => {
               </Select>
             </FormControl>
           ) : (
-            <FormControl sx={{ minWidth: 200 }}>
+            <FormControl sx={{ minWidth: { xs: "100%", sm: 200 } }} size={isMobile ? "small" : "medium"}>
               <InputLabel>소스</InputLabel>
               <Select
                 value={sources}
@@ -157,9 +170,19 @@ const NewsFeed: React.FC = () => {
         <List>
           {news.map((item, index) => (
             <React.Fragment key={index}>
-              <ListItem alignItems="flex-start" sx={{ py: 2, px: 0 }}>
+              <ListItem
+                alignItems="flex-start"
+                sx={{ py: 2, px: 0, flexDirection: { xs: "column", sm: "row" } }}
+              >
                 {item.image && (
-                  <Card sx={{ width: 200, mr: 2, flexShrink: 0 }}>
+                  <Card
+                    sx={{
+                      width: { xs: "100%", sm: 200 },
+                      mr: { xs: 0, sm: 2 },
+                      mb: { xs: 2, sm: 0 },
+                      flexShrink: 0,
+                    }}
+                  >
                     <CardMedia
                       component="img"
                       height="120"
@@ -176,7 +199,7 @@ const NewsFeed: React.FC = () => {
                     rel="noopener noreferrer"
                     underline="hover"
                     sx={{
-                      fontSize: "1.1rem",
+                      fontSize: { xs: "1rem", sm: "1.1rem" },
                       fontWeight: "bold",
                       display: "block",
                       mb: 1,
