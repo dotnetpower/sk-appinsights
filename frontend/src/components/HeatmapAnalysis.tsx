@@ -157,18 +157,18 @@ const HeatmapAnalysis: React.FC = () => {
   return (
     <Box>
       {/* 헤더 */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
-            <Typography variant="h4" gutterBottom>
+            <Typography variant={isMobile ? "h5" : "h4"} gutterBottom>
               📊 Business Heatmap Analysis
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" fontSize={{ xs: "0.8rem", md: "0.875rem" }}>
               제품 및 질문별 성과 분석 히트맵
             </Typography>
           </Grid>
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
+            <FormControl fullWidth size={isMobile ? "small" : "medium"}>
               <InputLabel>데이터셋 선택</InputLabel>
               <Select
                 value={selectedDataset}
@@ -185,7 +185,7 @@ const HeatmapAnalysis: React.FC = () => {
 
       {/* 범례 */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="subtitle2" gutterBottom>
+        <Typography variant="subtitle2" gutterBottom fontSize={{ xs: "0.875rem", md: "1rem" }}>
           Rankings
         </Typography>
         <Grid container spacing={1} alignItems="center">
@@ -196,7 +196,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(10.0),
                 color: getTextColor(10.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item>
@@ -206,7 +208,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(8.0),
                 color: getTextColor(8.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item>
@@ -216,7 +220,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(5.0),
                 color: getTextColor(5.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item>
@@ -226,7 +232,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(3.0),
                 color: getTextColor(3.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
           <Grid item>
@@ -236,7 +244,9 @@ const HeatmapAnalysis: React.FC = () => {
                 bgcolor: getColor(0.0),
                 color: getTextColor(0.0),
                 fontWeight: "bold",
+                fontSize: { xs: "0.7rem", md: "0.8125rem" },
               }}
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
         </Grid>
