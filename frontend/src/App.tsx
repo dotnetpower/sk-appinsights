@@ -9,6 +9,7 @@ import {
   Typography,
   Tab,
   Tabs,
+  useMediaQuery,
 } from "@mui/material";
 import Dashboard from "./components/Dashboard";
 import ETFList from "./components/ETFList";
@@ -36,6 +37,15 @@ const theme = createTheme({
       paper: "#1a2332",
     },
   },
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
+    },
+  },
 });
 
 interface TabPanelProps {
@@ -55,7 +65,9 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>{children}</Box>
+      )}
     </div>
   );
 }
@@ -63,6 +75,7 @@ function TabPanel(props: TabPanelProps) {
 function App() {
   const [tabValue, setTabValue] = useState(0);
   const [userId] = useState(() => getUserId());
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // 빌드 정보
   const buildInfo = {
@@ -144,24 +157,37 @@ function App() {
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static">
           <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              ETF Agent - 주식 & ETF 분석 대시보드
-            </Typography>
             <Typography
-              variant="caption"
-              sx={{
-                opacity: 0.7,
-                fontFamily: "monospace",
-                fontSize: "0.75rem",
-              }}
+              variant={isMobile ? "subtitle1" : "h6"}
+              component="div"
+              sx={{ flexGrow: 1 }}
             >
-              v{buildInfo.version} | {buildInfo.commit} |{" "}
-              {new Date(buildInfo.buildTime).toLocaleString("ko-KR", {
-                timeZone: "Asia/Seoul",
-              })}
+              {isMobile ? "ETF Agent" : "ETF Agent - 주식 & ETF 분석 대시보드"}
             </Typography>
+            {!isMobile && (
+              <Typography
+                variant="caption"
+                sx={{
+                  opacity: 0.7,
+                  fontFamily: "monospace",
+                  fontSize: "0.75rem",
+                }}
+              >
+                v{buildInfo.version} | {buildInfo.commit} |{" "}
+                {new Date(buildInfo.buildTime).toLocaleString("ko-KR", {
+                  timeZone: "Asia/Seoul",
+                })}
+              </Typography>
+            )}
           </Toolbar>
-          <Tabs value={tabValue} onChange={handleTabChange} centered>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            variant={isMobile ? "scrollable" : "standard"}
+            scrollButtons={isMobile ? "auto" : false}
+            allowScrollButtonsMobile
+            centered={!isMobile}
+          >
             <Tab label="대시보드" />
             <Tab label="ETF 목록" />
             <Tab label="주식 상세" />
@@ -171,7 +197,7 @@ function App() {
           </Tabs>
         </AppBar>
 
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
           <TabPanel value={tabValue} index={0}>
             <Dashboard />
           </TabPanel>

@@ -5,9 +5,27 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* 모바일 탭 하이라이트 색상 제거 */
+  -webkit-tap-highlight-color: transparent;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* 모바일 터치 최적화 */
+@media (max-width: 600px) {
+  /* 스크롤 부드럽게 */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* 작은 화면에서 텍스트 선택 방지 (UI 요소) */
+  button, a {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
 }
