@@ -157,13 +157,28 @@ function App() {
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static">
           <Toolbar>
-            <Typography
-              variant={isMobile ? "subtitle1" : "h6"}
-              component="div"
-              sx={{ flexGrow: 1 }}
-            >
-              {isMobile ? "ETF Agent" : "ETF Agent - 주식 & ETF 분석 대시보드"}
-            </Typography>
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography
+                variant={isMobile ? "subtitle1" : "h6"}
+                component="div"
+              >
+                {isMobile ? "ETF Agent" : "ETF Agent - 주식 & ETF 분석 대시보드"}
+              </Typography>
+              {isMobile && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    opacity: 0.6,
+                    fontFamily: "monospace",
+                    fontSize: "0.65rem",
+                    display: "block",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  v{buildInfo.version} | {buildInfo.commit.substring(0, 7)}
+                </Typography>
+              )}
+            </Box>
             {!isMobile && (
               <Typography
                 variant="caption"
