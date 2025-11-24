@@ -66,41 +66,83 @@ jobs:
         if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} &>/dev/null; then
           echo "✅ Container App 업데이트 중..."
           
-          # Secrets 업데이트
+          # Secrets 업데이트 (빈 값 필터링)
           echo "🔐 Secrets 업데이트 중..."
-          az containerapp secret set \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --secrets \
-              appinsights-connection-string="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
-              appinsights-workspace-id="${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" \
-              cosmos-endpoint="${{ secrets.COSMOS_ENDPOINT }}" \
-              cosmos-database-name="${{ secrets.COSMOS_DATABASE_NAME }}" \
-              cosmos-container-name="${{ secrets.COSMOS_CONTAINER_NAME }}" \
-              azure-openai-endpoint="${{ secrets.AZURE_OPENAI_ENDPOINT }}" \
-              azure-openai-api-key="${{ secrets.AZURE_OPENAI_API_KEY }}" \
-              azure-openai-deployment-name="${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}" \
-              azure-openai-api-version="${{ secrets.AZURE_OPENAI_API_VERSION }}" \
-              alpha-vantage-key="${{ secrets.ALPHA_VANTAGE_KEY }}" \
-            --output none
           
-          # 이미지 및 환경변수 업데이트
+          # 빈 값이 아닌 시크릿만 배열에 추가
+          SECRETS_ARRAY=()
+          [[ -n "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" ]] && \
+            SECRETS_ARRAY+=("appinsights-connection-string=${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}")
+          [[ -n "${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" ]] && \
+            SECRETS_ARRAY+=("appinsights-workspace-id=${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}")
+          [[ -n "${{ secrets.COSMOS_ENDPOINT }}" ]] && \
+            SECRETS_ARRAY+=("cosmos-endpoint=${{ secrets.COSMOS_ENDPOINT }}")
+          [[ -n "${{ secrets.COSMOS_DATABASE_NAME }}" ]] && \
+            SECRETS_ARRAY+=("cosmos-database-name=${{ secrets.COSMOS_DATABASE_NAME }}")
+          [[ -n "${{ secrets.COSMOS_CONTAINER_NAME }}" ]] && \
+            SECRETS_ARRAY+=("cosmos-container-name=${{ secrets.COSMOS_CONTAINER_NAME }}")
+          [[ -n "${{ secrets.AZURE_OPENAI_ENDPOINT }}" ]] && \
+            SECRETS_ARRAY+=("azure-openai-endpoint=${{ secrets.AZURE_OPENAI_ENDPOINT }}")
+          [[ -n "${{ secrets.AZURE_OPENAI_API_KEY }}" ]] && \
+            SECRETS_ARRAY+=("azure-openai-api-key=${{ secrets.AZURE_OPENAI_API_KEY }}")
+          [[ -n "${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}" ]] && \
+            SECRETS_ARRAY+=("azure-openai-deployment-name=${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}")
+          [[ -n "${{ secrets.AZURE_OPENAI_API_VERSION }}" ]] && \
+            SECRETS_ARRAY+=("azure-openai-api-version=${{ secrets.AZURE_OPENAI_API_VERSION }}")
+          [[ -n "${{ secrets.ALPHA_VANTAGE_KEY }}" ]] && \
+            SECRETS_ARRAY+=("alpha-vantage-key=${{ secrets.ALPHA_VANTAGE_KEY }}")
+          
+          # 시크릿이 있는 경우에만 설정
+          if [ ${#SECRETS_ARRAY[@]} -gt 0 ]; then
+            az containerapp secret set \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --secrets "${SECRETS_ARRAY[@]}" \
+              --output none
+          else
+            echo "⚠️  설정할 시크릿이 없습니다."
+          fi
+          
+          # 이미지 및 환경변수 업데이트 (빈 값 필터링)
           echo "🔄 이미지 및 환경변수 업데이트 중..."
-          az containerapp update \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            --set-env-vars \
-              "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string" \
-              "APPLICATIONINSIGHTS_WORKSPACE_ID=secretref:appinsights-workspace-id" \
-              "COSMOS_ENDPOINT=secretref:cosmos-endpoint" \
-              "COSMOS_DATABASE_NAME=secretref:cosmos-database-name" \
-              "COSMOS_CONTAINER_NAME=secretref:cosmos-container-name" \
-              "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" \
-              "AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key" \
-              "AZURE_OPENAI_DEPLOYMENT_NAME=secretref:azure-openai-deployment-name" \
-              "AZURE_OPENAI_API_VERSION=secretref:azure-openai-api-version" \
-              "ALPHA_VANTAGE_KEY=secretref:alpha-vantage-key"
+          
+          # 빈 값이 아닌 환경변수만 배열에 추가
+          ENV_VARS_ARRAY=()
+          [[ -n "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" ]] && \
+            ENV_VARS_ARRAY+=("APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string")
+          [[ -n "${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" ]] && \
+            ENV_VARS_ARRAY+=("APPLICATIONINSIGHTS_WORKSPACE_ID=secretref:appinsights-workspace-id")
+          [[ -n "${{ secrets.COSMOS_ENDPOINT }}" ]] && \
+            ENV_VARS_ARRAY+=("COSMOS_ENDPOINT=secretref:cosmos-endpoint")
+          [[ -n "${{ secrets.COSMOS_DATABASE_NAME }}" ]] && \
+            ENV_VARS_ARRAY+=("COSMOS_DATABASE_NAME=secretref:cosmos-database-name")
+          [[ -n "${{ secrets.COSMOS_CONTAINER_NAME }}" ]] && \
+            ENV_VARS_ARRAY+=("COSMOS_CONTAINER_NAME=secretref:cosmos-container-name")
+          [[ -n "${{ secrets.AZURE_OPENAI_ENDPOINT }}" ]] && \
+            ENV_VARS_ARRAY+=("AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint")
+          [[ -n "${{ secrets.AZURE_OPENAI_API_KEY }}" ]] && \
+            ENV_VARS_ARRAY+=("AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key")
+          [[ -n "${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}" ]] && \
+            ENV_VARS_ARRAY+=("AZURE_OPENAI_DEPLOYMENT_NAME=secretref:azure-openai-deployment-name")
+          [[ -n "${{ secrets.AZURE_OPENAI_API_VERSION }}" ]] && \
+            ENV_VARS_ARRAY+=("AZURE_OPENAI_API_VERSION=secretref:azure-openai-api-version")
+          [[ -n "${{ secrets.ALPHA_VANTAGE_KEY }}" ]] && \
+            ENV_VARS_ARRAY+=("ALPHA_VANTAGE_KEY=secretref:alpha-vantage-key")
+          
+          # 환경변수가 있는 경우에만 업데이트
+          if [ ${#ENV_VARS_ARRAY[@]} -gt 0 ]; then
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --set-env-vars "${ENV_VARS_ARRAY[@]}"
+          else
+            # 환경변수 없이 이미지만 업데이트
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          fi
           
           echo "✅ 업데이트 완료"
         else
@@ -118,43 +160,124 @@ jobs:
               --location koreacentral
           fi
           
-          # Container App 생성
-          az containerapp create \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --environment etf-agent-env \
-            --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
-            --registry-username $ACR_USERNAME \
-            --registry-password $ACR_PASSWORD \
-            --target-port 8000 \
-            --ingress external \
-            --min-replicas 1 \
-            --max-replicas 3 \
-            --cpu 0.5 \
-            --memory 1Gi \
-            --secrets \
-              appinsights-connection-string="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
-              appinsights-workspace-id="${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" \
-              cosmos-endpoint="${{ secrets.COSMOS_ENDPOINT }}" \
-              cosmos-database-name="${{ secrets.COSMOS_DATABASE_NAME }}" \
-              cosmos-container-name="${{ secrets.COSMOS_CONTAINER_NAME }}" \
-              azure-openai-endpoint="${{ secrets.AZURE_OPENAI_ENDPOINT }}" \
-              azure-openai-api-key="${{ secrets.AZURE_OPENAI_API_KEY }}" \
-              azure-openai-deployment-name="${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}" \
-              azure-openai-api-version="${{ secrets.AZURE_OPENAI_API_VERSION }}" \
-              alpha-vantage-key="${{ secrets.ALPHA_VANTAGE_KEY }}" \
-            --env-vars \
-              "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string" \
-              "APPLICATIONINSIGHTS_WORKSPACE_ID=secretref:appinsights-workspace-id" \
-              "COSMOS_ENDPOINT=secretref:cosmos-endpoint" \
-              "COSMOS_DATABASE_NAME=secretref:cosmos-database-name" \
-              "COSMOS_CONTAINER_NAME=secretref:cosmos-container-name" \
-              "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" \
-              "AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key" \
-              "AZURE_OPENAI_DEPLOYMENT_NAME=secretref:azure-openai-deployment-name" \
-              "AZURE_OPENAI_API_VERSION=secretref:azure-openai-api-version" \
-              "ALPHA_VANTAGE_KEY=secretref:alpha-vantage-key"
+          # Container App 생성 (빈 값 필터링)
+          
+          # 빈 값이 아닌 시크릿만 배열에 추가
+          SECRETS_ARRAY=()
+          [[ -n "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" ]] && \
+            SECRETS_ARRAY+=("appinsights-connection-string=${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}")
+          [[ -n "${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" ]] && \
+            SECRETS_ARRAY+=("appinsights-workspace-id=${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}")
+          [[ -n "${{ secrets.COSMOS_ENDPOINT }}" ]] && \
+            SECRETS_ARRAY+=("cosmos-endpoint=${{ secrets.COSMOS_ENDPOINT }}")
+          [[ -n "${{ secrets.COSMOS_DATABASE_NAME }}" ]] && \
+            SECRETS_ARRAY+=("cosmos-database-name=${{ secrets.COSMOS_DATABASE_NAME }}")
+          [[ -n "${{ secrets.COSMOS_CONTAINER_NAME }}" ]] && \
+            SECRETS_ARRAY+=("cosmos-container-name=${{ secrets.COSMOS_CONTAINER_NAME }}")
+          [[ -n "${{ secrets.AZURE_OPENAI_ENDPOINT }}" ]] && \
+            SECRETS_ARRAY+=("azure-openai-endpoint=${{ secrets.AZURE_OPENAI_ENDPOINT }}")
+          [[ -n "${{ secrets.AZURE_OPENAI_API_KEY }}" ]] && \
+            SECRETS_ARRAY+=("azure-openai-api-key=${{ secrets.AZURE_OPENAI_API_KEY }}")
+          [[ -n "${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}" ]] && \
+            SECRETS_ARRAY+=("azure-openai-deployment-name=${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}")
+          [[ -n "${{ secrets.AZURE_OPENAI_API_VERSION }}" ]] && \
+            SECRETS_ARRAY+=("azure-openai-api-version=${{ secrets.AZURE_OPENAI_API_VERSION }}")
+          [[ -n "${{ secrets.ALPHA_VANTAGE_KEY }}" ]] && \
+            SECRETS_ARRAY+=("alpha-vantage-key=${{ secrets.ALPHA_VANTAGE_KEY }}")
+          
+          # 빈 값이 아닌 환경변수만 배열에 추가
+          ENV_VARS_ARRAY=()
+          [[ -n "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" ]] && \
+            ENV_VARS_ARRAY+=("APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string")
+          [[ -n "${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" ]] && \
+            ENV_VARS_ARRAY+=("APPLICATIONINSIGHTS_WORKSPACE_ID=secretref:appinsights-workspace-id")
+          [[ -n "${{ secrets.COSMOS_ENDPOINT }}" ]] && \
+            ENV_VARS_ARRAY+=("COSMOS_ENDPOINT=secretref:cosmos-endpoint")
+          [[ -n "${{ secrets.COSMOS_DATABASE_NAME }}" ]] && \
+            ENV_VARS_ARRAY+=("COSMOS_DATABASE_NAME=secretref:cosmos-database-name")
+          [[ -n "${{ secrets.COSMOS_CONTAINER_NAME }}" ]] && \
+            ENV_VARS_ARRAY+=("COSMOS_CONTAINER_NAME=secretref:cosmos-container-name")
+          [[ -n "${{ secrets.AZURE_OPENAI_ENDPOINT }}" ]] && \
+            ENV_VARS_ARRAY+=("AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint")
+          [[ -n "${{ secrets.AZURE_OPENAI_API_KEY }}" ]] && \
+            ENV_VARS_ARRAY+=("AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key")
+          [[ -n "${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}" ]] && \
+            ENV_VARS_ARRAY+=("AZURE_OPENAI_DEPLOYMENT_NAME=secretref:azure-openai-deployment-name")
+          [[ -n "${{ secrets.AZURE_OPENAI_API_VERSION }}" ]] && \
+            ENV_VARS_ARRAY+=("AZURE_OPENAI_API_VERSION=secretref:azure-openai-api-version")
+          [[ -n "${{ secrets.ALPHA_VANTAGE_KEY }}" ]] && \
+            ENV_VARS_ARRAY+=("ALPHA_VANTAGE_KEY=secretref:alpha-vantage-key")
+          
+          # Container App 생성 (조건부 파라미터)
+          if [ ${#SECRETS_ARRAY[@]} -gt 0 ] && [ ${#ENV_VARS_ARRAY[@]} -gt 0 ]; then
+            # 시크릿과 환경변수 모두 있는 경우
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment etf-agent-env \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
+              --target-port 8000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --secrets "${SECRETS_ARRAY[@]}" \
+              --env-vars "${ENV_VARS_ARRAY[@]}"
+          elif [ ${#SECRETS_ARRAY[@]} -gt 0 ]; then
+            # 시크릿만 있는 경우
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment etf-agent-env \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
+              --target-port 8000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --secrets "${SECRETS_ARRAY[@]}"
+          elif [ ${#ENV_VARS_ARRAY[@]} -gt 0 ]; then
+            # 환경변수만 있는 경우
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment etf-agent-env \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
+              --target-port 8000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --env-vars "${ENV_VARS_ARRAY[@]}"
+          else
+            # 시크릿과 환경변수 모두 없는 경우
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment etf-agent-env \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
+              --target-port 8000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi
+          fi
         fi
     
     - name: 🌐 Configure Cosmos DB Network ACL
