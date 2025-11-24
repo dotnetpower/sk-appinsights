@@ -208,34 +208,76 @@ jobs:
           [[ -n "${{ secrets.ALPHA_VANTAGE_KEY }}" ]] && \
             ENV_VARS_ARRAY+=("ALPHA_VANTAGE_KEY=secretref:alpha-vantage-key")
           
-          # Container App 생성
-          CREATE_CMD="az containerapp create \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --environment etf-agent-env \
-            --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
-            --registry-username $ACR_USERNAME \
-            --registry-password $ACR_PASSWORD \
-            --target-port 8000 \
-            --ingress external \
-            --min-replicas 1 \
-            --max-replicas 3 \
-            --cpu 0.5 \
-            --memory 1Gi"
-          
-          # 시크릿이 있는 경우에만 추가
-          if [ ${#SECRETS_ARRAY[@]} -gt 0 ]; then
-            CREATE_CMD="$CREATE_CMD --secrets ${SECRETS_ARRAY[*]}"
+          # Container App 생성 (조건부 파라미터)
+          if [ ${#SECRETS_ARRAY[@]} -gt 0 ] && [ ${#ENV_VARS_ARRAY[@]} -gt 0 ]; then
+            # 시크릿과 환경변수 모두 있는 경우
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment etf-agent-env \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
+              --target-port 8000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --secrets "${SECRETS_ARRAY[@]}" \
+              --env-vars "${ENV_VARS_ARRAY[@]}"
+          elif [ ${#SECRETS_ARRAY[@]} -gt 0 ]; then
+            # 시크릿만 있는 경우
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment etf-agent-env \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
+              --target-port 8000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --secrets "${SECRETS_ARRAY[@]}"
+          elif [ ${#ENV_VARS_ARRAY[@]} -gt 0 ]; then
+            # 환경변수만 있는 경우
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment etf-agent-env \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
+              --target-port 8000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --env-vars "${ENV_VARS_ARRAY[@]}"
+          else
+            # 시크릿과 환경변수 모두 없는 경우
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment etf-agent-env \
+              --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
+              --target-port 8000 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi
           fi
-          
-          # 환경변수가 있는 경우에만 추가
-          if [ ${#ENV_VARS_ARRAY[@]} -gt 0 ]; then
-            CREATE_CMD="$CREATE_CMD --env-vars ${ENV_VARS_ARRAY[*]}"
-          fi
-          
-          # 명령 실행
-          eval $CREATE_CMD
         fi
     
     - name: 🌐 Configure Cosmos DB Network ACL
