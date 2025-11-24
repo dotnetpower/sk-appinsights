@@ -159,7 +159,7 @@ if [ -n "$FIREWALL_ENABLED" ]; then
         az cosmosdb update \
             --name $COSMOS_ACCOUNT_NAME \
             --resource-group $RESOURCE_GROUP \
-            --enable-public-network true
+            --network-acl-bypass AzureServices
         
         echo -e "${GREEN}✅ Azure 서비스 접근 허용 완료${NC}"
     fi

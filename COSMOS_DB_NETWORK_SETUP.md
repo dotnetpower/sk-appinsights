@@ -247,8 +247,7 @@ Container App Environment가 VNet 통합 없이 생성된 경우 Static IP가 �
 az cosmosdb update \
   --name cosmosskappinsights \
   --resource-group rg-sk-appinsights \
-  --enable-virtual-network false \
-  --enable-public-network true
+  --network-acl-bypass AzureServices
 ```
 
 #### 해결 방법 2: VNet 통합 환경 재생성

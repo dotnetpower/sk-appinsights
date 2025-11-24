@@ -153,22 +153,22 @@ jobs:
               "ALPHA_VANTAGE_KEY=secretref:alpha-vantage-key"
         fi
     
-    - name: 🌐 Configure Cosmos DB Public Access
+    - name: 🌐 Configure Cosmos DB Network ACL
       run: |
         echo "=========================================="
-        echo "🌐 Cosmos DB Public Access 설정 중..."
+        echo "🌐 Cosmos DB 네트워크 ACL 설정 중..."
         echo "=========================================="
         
-        # Cosmos DB를 Public Access로 설정 (모든 IP 허용)
-        echo "🔓 Cosmos DB를 Public Access로 변경 중..."
+        # Cosmos DB에서 Azure 서비스 접근 허용
+        echo "🔓 Cosmos DB에서 Azure 서비스 접근 허용 중..."
         az cosmosdb update \
           --name ${{ env.COSMOS_ACCOUNT_NAME }} \
           --resource-group ${{ env.RESOURCE_GROUP }} \
-          --enable-public-network true
+          --network-acl-bypass AzureServices
         
-        echo "✅ Cosmos DB Public Access 설정 완료!"
+        echo "✅ Cosmos DB 네트워크 ACL 설정 완료!"
         echo ""
-        echo "⚠️  참고: Cosmos DB가 공개 네트워크에서 접근 가능하도록 설정되었습니다."
+        echo "⚠️  참고: Cosmos DB에서 Azure 서비스의 접근이 허용되었습니다."
         echo "   보안을 위해 Azure AD 인증을 사용하고 있습니다."
     
     - name: 🎉 Get App URL
