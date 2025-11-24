@@ -149,21 +149,29 @@ function App() {
     samplingInterval: 2000, // 2초마다 샘플링
   });
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    // 탭 변경 이벤트 추적
+  // 공통 탭 변경 추적 함수
+  const trackTabChange = (
+    newIndex: number,
+    eventName: string,
+    additionalProperties?: Record<string, any>
+  ) => {
     trackEvent({
-      event_name: "tab_changed",
+      event_name: eventName,
       event_category: "navigation",
       user_id: userId,
       session_id: sessionId,
       properties: {
         from_tab: menuItems[tabValue].pageName,
-        to_tab: menuItems[newValue].pageName,
+        to_tab: menuItems[newIndex].pageName,
         from_index: tabValue,
-        to_index: newValue,
+        to_index: newIndex,
+        ...additionalProperties,
       },
     });
+  };
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    trackTabChange(newValue, "tab_changed");
     setTabValue(newValue);
   };
 
@@ -172,21 +180,7 @@ function App() {
   };
 
   const handleMenuItemClick = (index: number) => {
-    // 메뉴 아이템 클릭 이벤트 추적
-    trackEvent({
-      event_name: "menu_item_clicked",
-      event_category: "navigation",
-      user_id: userId,
-      session_id: sessionId,
-      properties: {
-        from_tab: menuItems[tabValue].pageName,
-        to_tab: menuItems[index].pageName,
-        from_index: tabValue,
-        to_index: index,
-        interaction_type: "drawer",
-      },
-    });
-
+    trackTabChange(index, "menu_item_clicked", { interaction_type: "drawer" });
     setTabValue(index);
     setDrawerOpen(false);
   };
@@ -302,7 +296,8 @@ function App() {
                   sx={{
                     minHeight: 56,
                     "&.Mui-selected": {
-                      backgroundColor: "primary.dark",
+                      backgroundColor: "primary.main",
+                      color: "primary.contrastText",
                       "&:hover": {
                         backgroundColor: "primary.dark",
                       },
@@ -311,7 +306,8 @@ function App() {
                 >
                   <ListItemIcon
                     sx={{
-                      color: tabValue === index ? "primary.light" : "inherit",
+                      color:
+                        tabValue === index ? "primary.contrastText" : "inherit",
                     }}
                   >
                     {item.icon}
