@@ -10,7 +10,22 @@ import {
   Tab,
   Tabs,
   useMediaQuery,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import ListAltIcon from "@mui/icons-material/ListAlt";
+import ShowChartIcon from "@mui/icons-material/ShowChart";
+import FeedIcon from "@mui/icons-material/Feed";
+import ChatIcon from "@mui/icons-material/Chat";
+import GridOnIcon from "@mui/icons-material/GridOn";
 import Dashboard from "./components/Dashboard";
 import ETFList from "./components/ETFList";
 import StockDetail from "./components/StockDetail";
@@ -75,6 +90,7 @@ function TabPanel(props: TabPanelProps) {
 function App() {
   const [tabValue, setTabValue] = useState(0);
   const [userId] = useState(() => getUserId());
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // 빌드 정보
@@ -85,15 +101,45 @@ function App() {
   };
 
   // 페이지 이름 매핑
-  const pageNames = [
-    "Dashboard",
-    "ETF List",
-    "Stock Detail",
-    "News Feed",
-    "AI Chat",
-    "Heatmap Analysis",
+  const menuItems = [
+    {
+      id: "dashboard",
+      name: "대시보드",
+      icon: <DashboardIcon />,
+      pageName: "Dashboard",
+    },
+    {
+      id: "etf-list",
+      name: "ETF 목록",
+      icon: <ListAltIcon />,
+      pageName: "ETF List",
+    },
+    {
+      id: "stock-detail",
+      name: "주식 상세",
+      icon: <ShowChartIcon />,
+      pageName: "Stock Detail",
+    },
+    {
+      id: "news-feed",
+      name: "뉴스 피드",
+      icon: <FeedIcon />,
+      pageName: "News Feed",
+    },
+    {
+      id: "ai-chat",
+      name: "AI 채팅",
+      icon: <ChatIcon />,
+      pageName: "AI Chat",
+    },
+    {
+      id: "heatmap-analysis",
+      name: "히트맵 분석",
+      icon: <GridOnIcon />,
+      pageName: "Heatmap Analysis",
+    },
   ];
-  const currentPage = pageNames[tabValue];
+  const currentPage = menuItems[tabValue].pageName;
 
   // 현재 페이지 추적
   const { sessionId } = usePageTracking(currentPage, userId, {
@@ -133,22 +179,40 @@ function App() {
     samplingInterval: 2000, // 2초마다 샘플링
   });
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    // 탭 변경 이벤트 추적
+  // 공통 탭 변경 추적 함수
+  const trackTabChange = (
+    newIndex: number,
+    eventName: string,
+    additionalProperties?: Record<string, any>
+  ) => {
     trackEvent({
-      event_name: "tab_changed",
+      event_name: eventName,
       event_category: "navigation",
       user_id: userId,
       session_id: sessionId,
       properties: {
-        from_tab: pageNames[tabValue],
-        to_tab: pageNames[newValue],
+        from_tab: menuItems[tabValue].pageName,
+        to_tab: menuItems[newIndex].pageName,
         from_index: tabValue,
-        to_index: newValue,
+        to_index: newIndex,
+        ...additionalProperties,
       },
     });
+  };
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    trackTabChange(newValue, "tab_changed");
     setTabValue(newValue);
+  };
+
+  const handleDrawerToggle = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
+  const handleMenuItemClick = (index: number) => {
+    trackTabChange(index, "menu_item_clicked", { interaction_type: "drawer" });
+    setTabValue(index);
+    setDrawerOpen(false);
   };
 
   return (
@@ -157,6 +221,19 @@ function App() {
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static">
           <Toolbar>
+            {isMobile && (
+              <IconButton
+                color="inherit"
+                aria-label={drawerOpen ? "메뉴 닫기" : "메뉴 열기"}
+                aria-expanded={drawerOpen}
+                aria-controls="mobile-menu-list"
+                edge="start"
+                onClick={handleDrawerToggle}
+                sx={{ mr: 2 }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
             <Box sx={{ flexGrow: 1 }}>
               <Typography
                 variant={isMobile ? "subtitle1" : "h6"}
@@ -175,7 +252,7 @@ function App() {
                     lineHeight: 1.2,
                   }}
                 >
-                  v{buildInfo.version} | {buildInfo.commit.substring(0, 7)}
+                  v{buildInfo.version}
                 </Typography>
               )}
             </Box>
@@ -195,22 +272,89 @@ function App() {
               </Typography>
             )}
           </Toolbar>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            variant={isMobile ? "scrollable" : "standard"}
-            scrollButtons={isMobile ? "auto" : false}
-            allowScrollButtonsMobile
-            centered={!isMobile}
-          >
-            <Tab label="대시보드" />
-            <Tab label="ETF 목록" />
-            <Tab label="주식 상세" />
-            <Tab label="뉴스 피드" />
-            <Tab label="AI 채팅" />
-            <Tab label="히트맵 분석" />
-          </Tabs>
+          {!isMobile && (
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              variant="standard"
+              centered
+            >
+              {menuItems.map((item, index) => (
+                <Tab
+                  key={item.id}
+                  label={item.name}
+                  icon={item.icon}
+                  iconPosition="start"
+                  id={`tab-${index}`}
+                  aria-controls={`tabpanel-${index}`}
+                />
+              ))}
+            </Tabs>
+          )}
         </AppBar>
+
+        {/* Mobile Drawer Menu */}
+        <Drawer
+          anchor="left"
+          open={drawerOpen}
+          onClose={handleDrawerToggle}
+          aria-label="모바일 네비게이션 메뉴"
+          id="mobile-menu-drawer"
+          sx={{
+            "& .MuiDrawer-paper": {
+              width: 280,
+              backgroundColor: theme.palette.background.paper,
+            },
+          }}
+        >
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" component="div" gutterBottom>
+              ETF Agent
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                opacity: 0.7,
+                fontFamily: "monospace",
+                display: "block",
+              }}
+            >
+              v{buildInfo.version} | {buildInfo.commit.substring(0, 7)}
+            </Typography>
+          </Box>
+          <Divider />
+          <List id="mobile-menu-list">
+            {menuItems.map((item, index) => (
+              <ListItem key={item.id} disablePadding>
+                <ListItemButton
+                  selected={tabValue === index}
+                  onClick={() => handleMenuItemClick(index)}
+                  sx={{
+                    minHeight: 56,
+                    "&.Mui-selected": {
+                      backgroundColor: "primary.main",
+                      color: "primary.contrastText",
+                      "& .MuiListItemIcon-root": {
+                        color: "primary.contrastText",
+                      },
+                      "&:hover": {
+                        backgroundColor: "primary.dark",
+                      },
+                    },
+                  }}
+                >
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText
+                    primary={item.name}
+                    primaryTypographyProps={{
+                      fontWeight: tabValue === index ? 600 : 400,
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Drawer>
 
         <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
           <TabPanel value={tabValue} index={0}>
