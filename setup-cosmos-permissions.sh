@@ -160,7 +160,7 @@ if [ -n "$FIREWALL_ENABLED" ]; then
             --name $COSMOS_ACCOUNT_NAME \
             --resource-group $RESOURCE_GROUP \
             --ip-range-filter "0.0.0.0" \
-            --enable-public-network true \
+            --public-network-access enabled \
             --enable-virtual-network false
         
         echo -e "${GREEN}✅ Cosmos DB 네트워크 설정 완료 (0.0.0.0 허용)${NC}"

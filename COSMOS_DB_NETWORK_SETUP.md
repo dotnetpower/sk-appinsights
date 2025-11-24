@@ -31,13 +31,17 @@ Azure Cosmos DB의 네트워크 보안을 위해 public network access가 정책
      --query "ipRules[].ipAddressOrRange"
    ```
 
-3. **Container App IP를 방화벽 규칙에 추가** (아직 없는 경우)
+3. **Cosmos DB에 모든 IP 허용 (0.0.0.0) 설정**
    ```bash
    az cosmosdb update \
      --name <cosmos-account> \
      --resource-group <resource-group> \
-     --ip-range-filter "<container-app-ip>,<existing-ips>"
+     --ip-range-filter "0.0.0.0" \
+     --public-network-access enabled \
+     --enable-virtual-network false
    ```
+   
+   **참고**: 이 설정은 모든 IP에서 접근을 허용하지만, Azure AD (Managed Identity) 인증을 통해 보안을 유지합니다.
 
 ### 필수 GitHub Secret
 
@@ -85,7 +89,7 @@ STATIC_IP=$(az containerapp env show \
 echo "Container App Static IP: $STATIC_IP"
 ```
 
-#### 2. Cosmos DB 방화벽 규칙에 IP 추가
+#### 2. Cosmos DB에 모든 IP 허용 설정
 
 ```bash
 COSMOS_ACCOUNT_NAME="cosmosskappinsights"
@@ -96,23 +100,19 @@ az cosmosdb show \
   --resource-group $RESOURCE_GROUP \
   --query "ipRules[].ipAddressOrRange" -o tsv
 
-# Container App IP 추가
+# 모든 IP 허용 (0.0.0.0)
 az cosmosdb update \
   --name $COSMOS_ACCOUNT_NAME \
   --resource-group $RESOURCE_GROUP \
-  --ip-range-filter "$STATIC_IP"
+  --ip-range-filter "0.0.0.0" \
+  --public-network-access enabled \
+  --enable-virtual-network false
 ```
 
-**주의**: `--ip-range-filter`는 기존 IP를 모두 대체합니다. 기존 IP가 있는 경우 함께 포함해야 합니다:
-
-```bash
-# 기존 IP들과 함께 추가
-EXISTING_IPS="1.2.3.4,5.6.7.8"
-az cosmosdb update \
-  --name $COSMOS_ACCOUNT_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --ip-range-filter "$STATIC_IP,$EXISTING_IPS"
-```
+**참고**: 
+- `0.0.0.0`은 모든 IP 주소의 접근을 허용합니다
+- Azure AD (Managed Identity) 인증을 사용하여 보안을 유지합니다
+- Container App의 동적 IP 변경에도 영향을 받지 않습니다
 
 #### 3. 방화벽 규칙 확인
 

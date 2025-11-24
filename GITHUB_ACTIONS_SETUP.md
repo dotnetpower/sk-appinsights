@@ -89,6 +89,11 @@ az monitor app-insights component show \
 # Cosmos DB 계정 이름
 # GitHub Actions에서 Cosmos DB 네트워크 ACL 설정에 사용됩니다
 # 예: cosmosskappinsights
+
+# Azure Portal에서 확인:
+# Cosmos DB 리소스 → Overview → 리소스 이름
+# 또는 CLI로 확인:
+az cosmosdb list --resource-group rg-sk-appinsights --query "[].name" -o tsv
 ```
 
 **`COSMOS_ENDPOINT`**

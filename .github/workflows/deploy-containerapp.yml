@@ -159,13 +159,13 @@ jobs:
         echo "🌐 Cosmos DB 네트워크 ACL 설정 중..."
         echo "=========================================="
         
-        # Cosmos DB에 모든 IP 허용 (0.0.0.0) 및 Selected Networks로 설정
+        # Cosmos DB에 모든 IP 허용 (0.0.0.0) 및 Public Network Access 활성화
         echo "🔓 Cosmos DB 네트워크 설정 중..."
         az cosmosdb update \
           --name ${{ env.COSMOS_ACCOUNT_NAME }} \
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --ip-range-filter "0.0.0.0" \
-          --enable-public-network true \
+          --public-network-access enabled \
           --enable-virtual-network false
         
         echo "✅ Cosmos DB 네트워크 ACL 설정 완료!"
