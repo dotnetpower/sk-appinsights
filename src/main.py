@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 
-from .api import analytics, chat, etf, news, stocks
+from .api import analytics, chat, etf, insights, live_metrics, news, stocks
 from .observability import (TracingMiddleware, initialize_metrics,
                             setup_telemetry)
 
@@ -58,6 +58,8 @@ app.include_router(stocks.router)
 app.include_router(news.router)
 app.include_router(chat.router)
 app.include_router(analytics.router)
+app.include_router(insights.router)
+app.include_router(live_metrics.router)
 
 # Frontend 정적 파일 서빙
 frontend_build_path = Path(__file__).parent.parent / "frontend" / "build"

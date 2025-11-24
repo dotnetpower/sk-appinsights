@@ -213,17 +213,68 @@ AzureMetrics
 
 ## 🎯 Application Insights 데이터 모델
 
-Application Insights는 다음 표준 테이블에 데이터를 저장합니다:
+Application Insights는 다음 표준 테이블에 데이터를 저장합니다. Log Analytics workspace 기반 Application Insights에서는 표준 테이블명을 사용합니다.
 
-| 테이블 | 설명 | 수집 방법 |
-|--------|------|-----------|
-| **requests** | HTTP 요청/응답 | FastAPI 자동 계측 |
-| **dependencies** | 외부 API, DB 호출 | HTTPX, Cosmos DB 자동 계측 |
-| **traces** | 로그 메시지 | Python logger 출력 |
-| **exceptions** | 예외 및 에러 | 자동 예외 캡처 |
-| **pageViews** | 페이지 뷰 | 수동 추적 (실습 3) |
-| **customEvents** | 사용자 이벤트 | 수동 추적 (실습 3) |
-| **customMetrics** | 커스텀 메트릭 | OpenTelemetry Metrics |
+### Application Insights 테이블 매핑
+
+| 기존 테이블명 (Classic) | Log Analytics 테이블명 | 설명 | 수집 방법 |
+|------------------------|----------------------|------|-----------|
+| `requests` | `AppRequests` | HTTP 요청/응답 추적 | FastAPI 자동 계측 |
+| `dependencies` | `AppDependencies` | 외부 API, DB 호출 | HTTPX, Cosmos DB 자동 계측 |
+| `traces` | `AppTraces` | 로그 메시지 | Python logger 출력 |
+| `exceptions` | `AppExceptions` | 예외 및 에러 | 자동 예외 캡처 |
+| `pageViews` | `AppPageViews` | 페이지 뷰 | 수동 추적 (실습 3) |
+| `customEvents` | `AppEvents` | 사용자 이벤트 | 수동 추적 (실습 3) |
+| `customMetrics` | `AppMetrics` | 커스텀 메트릭 | OpenTelemetry Metrics |
+| `availabilityResults` | `AppAvailabilityResults` | 가용성 테스트 | 가용성 테스트 설정 |
+
+### 주요 컬럼 변경사항
+
+KQL 쿼리 작성 시 다음 컬럼명 변경에 유의하세요:
+
+| Classic API | Log Analytics | 설명 |
+|-------------|---------------|------|
+| `timestamp` | `TimeGenerated` | 이벤트 발생 시간 |
+| `name` | `Name` | 요청/이벤트 이름 |
+| `resultCode` | `ResultCode` | HTTP 상태 코드 |
+| `duration` | `DurationMs` | 소요 시간 (밀리초) |
+| `success` | `Success` | 성공 여부 (boolean) |
+| `customDimensions` | `Properties` | 커스텀 속성 (JSON) |
+| `customMeasurements` | `Measurements` | 커스텀 측정값 (JSON) |
+
+### KQL 쿼리 예시
+
+```kusto
+// ❌ 잘못된 쿼리 (Classic 테이블명)
+requests
+| where timestamp > ago(1h)
+| summarize count() by name
+
+// ✅ 올바른 쿼리 (Log Analytics 테이블명)
+AppRequests
+| where TimeGenerated > ago(1h)
+| summarize count() by Name
+
+// 외부 API 호출 분석
+AppDependencies
+| where TimeGenerated > ago(24h)
+| summarize avg_duration = avg(DurationMs), call_count = count() by Name, Type
+| order by avg_duration desc
+
+// 커스텀 이벤트 조회
+AppEvents
+| where TimeGenerated > ago(24h)
+| where Name == "page_view"
+| extend page_name = tostring(Properties.page_name)
+| summarize visit_count = count() by page_name
+| order by visit_count desc
+```
+
+<div class="warning" data-title="⚠️ 중요">
+
+> 2024년 이후 생성된 Application Insights 리소스는 **Workspace-based** 모드로 생성되며, Log Analytics 표준 테이블명(`AppRequests`, `AppEvents` 등)을 사용해야 합니다. Classic 모드(`requests`, `customEvents`)는 더 이상 권장되지 않습니다.
+
+</div>
 
 ## 🛠️ 실습 1-1: Azure 리소스 생성
 

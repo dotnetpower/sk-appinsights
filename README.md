@@ -152,6 +152,7 @@ sk-appinsights/
 - 💬 **AI 채팅**: Semantic Kernel 기반 주식 질의응답
 - 📉 **데이터 시각화**: 차트 및 그래프
 - 🔍 **사용자 행동 분석**: Application Insights 통합
+- 🔎 **App Insights**: KQL 쿼리를 통한 애플리케이션 원격 분석 분석
 
 ## 설치 및 실행
 
@@ -204,6 +205,7 @@ CONTAINER_APP_NAME=ca-sk-appinsights
 
 # Application Insights (필수)
 APPLICATIONINSIGHTS_CONNECTION_STRING="InstrumentationKey=xxx;IngestionEndpoint=https://koreacentral-0.in.applicationinsights.azure.com/;LiveEndpoint=https://koreacentral.livediagnostics.monitor.azure.com/;ApplicationId=xxx"
+APPLICATIONINSIGHTS_WORKSPACE_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # KQL 쿼리용
 
 # Azure Cosmos DB (필수)
 COSMOS_ENDPOINT="https://xxx.documents.azure.com:443/"
@@ -424,6 +426,58 @@ python test_observability.py
 
 # Azure Portal → Application Insights → Logs
 # KQL 쿼리로 데이터 확인
+```
+
+### Application Insights 테이블 매핑
+
+Application Insights의 Log Analytics workspace에서는 표준 테이블명을 사용합니다. KQL 쿼리 작성 시 다음 매핑을 참고하세요:
+
+| 기존 테이블명 (Classic) | Log Analytics 테이블명 | 설명 | 주요 컬럼 |
+|------------------------|----------------------|------|-----------|
+| `requests` | `AppRequests` | HTTP 요청 추적 | `TimeGenerated`, `Name`, `ResultCode`, `DurationMs`, `Success` |
+| `dependencies` | `AppDependencies` | 외부 서비스 호출 | `TimeGenerated`, `Name`, `Type`, `Target`, `ResultCode`, `Success` |
+| `traces` | `AppTraces` | 로그 메시지 | `TimeGenerated`, `Message`, `SeverityLevel` |
+| `exceptions` | `AppExceptions` | 예외 및 오류 | `TimeGenerated`, `ProblemId`, `OuterMessage`, `Type` |
+| `pageViews` | `AppPageViews` | 페이지 뷰 추적 | `TimeGenerated`, `Name`, `Url`, `DurationMs` |
+| `customEvents` | `AppEvents` | 커스텀 이벤트 | `TimeGenerated`, `Name`, `Properties` |
+| `customMetrics` | `AppMetrics` | 커스텀 메트릭 | `TimeGenerated`, `Name`, `Sum`, `Count` |
+| `availabilityResults` | `AppAvailabilityResults` | 가용성 테스트 | `TimeGenerated`, `Name`, `Success`, `DurationMs` |
+
+**주요 컬럼 변경사항**:
+- `timestamp` → `TimeGenerated`
+- `name` → `Name`
+- `resultCode` → `ResultCode`
+- `duration` → `DurationMs`
+- `success` → `Success`
+- `customDimensions` → `Properties`
+- `customMeasurements` → `Measurements`
+
+**KQL 쿼리 예시**:
+
+```kusto
+// ❌ 잘못된 쿼리 (Classic 테이블명)
+requests
+| where timestamp > ago(1h)
+| summarize count() by name
+
+// ✅ 올바른 쿼리 (Log Analytics 테이블명)
+AppRequests
+| where TimeGenerated > ago(1h)
+| summarize count() by Name
+
+// 커스텀 이벤트 조회
+AppEvents
+| where TimeGenerated > ago(24h)
+| where Name == "page_view"
+| extend page_name = tostring(Properties.page_name)
+| summarize visit_count = count() by page_name
+| order by visit_count desc
+
+// 성능 분석
+AppRequests
+| where TimeGenerated > ago(24h)
+| summarize avg_duration = avg(DurationMs), request_count = count() by bin(TimeGenerated, 1h)
+| render timechart
 ```
 
 ## Application Insights 텔레메트리
@@ -762,6 +816,7 @@ Application Insights 모니터링 및 분석을 위한 심화 가이드:
 - **[Live Metrics 가이드](./LIVE_METRICS_GUIDE.md)** - 실시간 모니터링 설정, 사용자 정의 메트릭, 트러블슈팅
 - **[대시보드 설정 가이드](./DASHBOARD_SETUP.md)** - Azure Portal 대시보드 및 Workbook 구성, KQL 쿼리 모음
 - **[Cosmos DB 네트워크 설정](./COSMOS_DB_NETWORK_SETUP.md)** - Cosmos DB 방화벽 설정 및 Container App IP 허용 가이드
+- **[App Insights KQL 쿼리 설정](./APP_INSIGHTS_KQL_SETUP.md)** - KQL 쿼리 실행을 위한 환경 설정 및 권한 관리
 
 ---
 

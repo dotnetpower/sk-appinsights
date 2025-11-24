@@ -3,9 +3,6 @@ import { analyticsApi } from "./api";
 /**
  * 페이지 뷰 추적
  */
-/**
- * 페이지 뷰 추적
- */
 export const trackPageView = async (data: {
   page_name: string;
   duration_ms?: number;
@@ -19,8 +16,9 @@ export const trackPageView = async (data: {
     console.log("✅ Page view tracked successfully:", response.data);
     return response;
   } catch (error) {
-    console.error("❌ Failed to track page view:", error);
-    throw error;
+    console.warn("⚠️ Failed to track page view (non-critical):", error);
+    // 추적 실패는 치명적이지 않으므로 에러를 던지지 않음
+    return null;
   }
 };
 
@@ -40,8 +38,9 @@ export const trackEvent = async (data: {
     console.log("✅ Event tracked successfully:", response.data);
     return response;
   } catch (error) {
-    console.error("❌ Failed to track event:", error);
-    throw error;
+    console.warn("⚠️ Failed to track event (non-critical):", error);
+    // 추적 실패는 치명적이지 않으므로 에러를 던지지 않음
+    return null;
   }
 };
 

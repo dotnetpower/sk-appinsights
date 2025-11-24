@@ -26,12 +26,15 @@ import ShowChartIcon from "@mui/icons-material/ShowChart";
 import FeedIcon from "@mui/icons-material/Feed";
 import ChatIcon from "@mui/icons-material/Chat";
 import GridOnIcon from "@mui/icons-material/GridOn";
+import InsightsIcon from "@mui/icons-material/Insights";
 import Dashboard from "./components/Dashboard";
 import ETFList from "./components/ETFList";
 import StockDetail from "./components/StockDetail";
 import NewsFeed from "./components/NewsFeed";
 import ChatInterface from "./components/ChatInterface";
 import HeatmapAnalysis from "./components/HeatmapAnalysis";
+import AppInsights from "./components/AppInsights";
+import LiveTrafficChart from "./components/LiveTrafficChart";
 import { usePageTracking, getUserId } from "./hooks/usePageTracking";
 import { usePageVisibility, usePageFocus } from "./hooks/usePageVisibility";
 import { useMouseTracking, useScrollTracking } from "./hooks/useMouseTracking";
@@ -138,6 +141,18 @@ function App() {
       icon: <GridOnIcon />,
       pageName: "Heatmap Analysis",
     },
+    {
+      id: "app-insights",
+      name: "App Insights",
+      icon: <InsightsIcon />,
+      pageName: "App Insights",
+    },
+    {
+      id: "live-traffic",
+      name: "실시간 트래픽",
+      icon: <ShowChartIcon />,
+      pageName: "Live Traffic",
+    },
   ];
   const currentPage = menuItems[tabValue].pageName;
 
@@ -239,7 +254,9 @@ function App() {
                 variant={isMobile ? "subtitle1" : "h6"}
                 component="div"
               >
-                {isMobile ? "ETF Agent" : "ETF Agent - 주식 & ETF 분석 대시보드"}
+                {isMobile
+                  ? "ETF Agent"
+                  : "ETF Agent - 주식 & ETF 분석 대시보드"}
               </Typography>
               {isMobile && (
                 <Typography
@@ -374,6 +391,12 @@ function App() {
           </TabPanel>
           <TabPanel value={tabValue} index={5}>
             <HeatmapAnalysis />
+          </TabPanel>
+          <TabPanel value={tabValue} index={6}>
+            <AppInsights />
+          </TabPanel>
+          <TabPanel value={tabValue} index={7}>
+            <LiveTrafficChart />
           </TabPanel>
         </Container>
       </Box>
