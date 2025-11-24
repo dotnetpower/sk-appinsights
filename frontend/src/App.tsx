@@ -224,7 +224,7 @@ function App() {
             {isMobile && (
               <IconButton
                 color="inherit"
-                aria-label="메뉴 열기"
+                aria-label={drawerOpen ? "메뉴 닫기" : "메뉴 열기"}
                 aria-expanded={drawerOpen}
                 aria-controls="mobile-menu-list"
                 edge="start"
@@ -298,7 +298,7 @@ function App() {
           anchor="left"
           open={drawerOpen}
           onClose={handleDrawerToggle}
-          aria-labelledby="mobile-menu-title"
+          aria-label="모바일 네비게이션 메뉴"
           id="mobile-menu-drawer"
           sx={{
             "& .MuiDrawer-paper": {
@@ -308,12 +308,7 @@ function App() {
           }}
         >
           <Box sx={{ p: 2 }}>
-            <Typography
-              id="mobile-menu-title"
-              variant="h6"
-              component="div"
-              gutterBottom
-            >
+            <Typography variant="h6" component="div" gutterBottom>
               ETF Agent
             </Typography>
             <Typography
