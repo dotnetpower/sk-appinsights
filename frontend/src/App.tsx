@@ -102,12 +102,42 @@ function App() {
 
   // 페이지 이름 매핑
   const menuItems = [
-    { name: "대시보드", icon: <DashboardIcon />, pageName: "Dashboard" },
-    { name: "ETF 목록", icon: <ListAltIcon />, pageName: "ETF List" },
-    { name: "주식 상세", icon: <ShowChartIcon />, pageName: "Stock Detail" },
-    { name: "뉴스 피드", icon: <FeedIcon />, pageName: "News Feed" },
-    { name: "AI 채팅", icon: <ChatIcon />, pageName: "AI Chat" },
-    { name: "히트맵 분석", icon: <GridOnIcon />, pageName: "Heatmap Analysis" },
+    {
+      id: "dashboard",
+      name: "대시보드",
+      icon: <DashboardIcon />,
+      pageName: "Dashboard",
+    },
+    {
+      id: "etf-list",
+      name: "ETF 목록",
+      icon: <ListAltIcon />,
+      pageName: "ETF List",
+    },
+    {
+      id: "stock-detail",
+      name: "주식 상세",
+      icon: <ShowChartIcon />,
+      pageName: "Stock Detail",
+    },
+    {
+      id: "news-feed",
+      name: "뉴스 피드",
+      icon: <FeedIcon />,
+      pageName: "News Feed",
+    },
+    {
+      id: "ai-chat",
+      name: "AI 채팅",
+      icon: <ChatIcon />,
+      pageName: "AI Chat",
+    },
+    {
+      id: "heatmap-analysis",
+      name: "히트맵 분석",
+      icon: <GridOnIcon />,
+      pageName: "Heatmap Analysis",
+    },
   ];
   const currentPage = menuItems[tabValue].pageName;
 
@@ -251,7 +281,7 @@ function App() {
             >
               {menuItems.map((item, index) => (
                 <Tab
-                  key={index}
+                  key={item.id}
                   label={item.name}
                   icon={item.icon}
                   iconPosition="start"
@@ -298,7 +328,7 @@ function App() {
           <Divider />
           <List>
             {menuItems.map((item, index) => (
-              <ListItem key={index} disablePadding>
+              <ListItem key={item.id} disablePadding>
                 <ListItemButton
                   selected={tabValue === index}
                   onClick={() => handleMenuItemClick(index)}
@@ -307,20 +337,16 @@ function App() {
                     "&.Mui-selected": {
                       backgroundColor: "primary.main",
                       color: "primary.contrastText",
+                      "& .MuiListItemIcon-root": {
+                        color: "primary.contrastText",
+                      },
                       "&:hover": {
                         backgroundColor: "primary.dark",
                       },
                     },
                   }}
                 >
-                  <ListItemIcon
-                    sx={{
-                      color:
-                        tabValue === index ? "primary.contrastText" : "inherit",
-                    }}
-                  >
-                    {item.icon}
-                  </ListItemIcon>
+                  <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText
                     primary={item.name}
                     primaryTypographyProps={{
