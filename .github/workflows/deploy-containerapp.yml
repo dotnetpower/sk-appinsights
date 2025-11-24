@@ -73,6 +73,7 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --secrets \
               appinsights-connection-string="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
+              appinsights-workspace-id="${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" \
               cosmos-endpoint="${{ secrets.COSMOS_ENDPOINT }}" \
               cosmos-database-name="${{ secrets.COSMOS_DATABASE_NAME }}" \
               cosmos-container-name="${{ secrets.COSMOS_CONTAINER_NAME }}" \
@@ -91,6 +92,7 @@ jobs:
             --image ${{ env.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --set-env-vars \
               "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string" \
+              "APPLICATIONINSIGHTS_WORKSPACE_ID=secretref:appinsights-workspace-id" \
               "COSMOS_ENDPOINT=secretref:cosmos-endpoint" \
               "COSMOS_DATABASE_NAME=secretref:cosmos-database-name" \
               "COSMOS_CONTAINER_NAME=secretref:cosmos-container-name" \
@@ -133,6 +135,7 @@ jobs:
             --memory 1Gi \
             --secrets \
               appinsights-connection-string="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
+              appinsights-workspace-id="${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" \
               cosmos-endpoint="${{ secrets.COSMOS_ENDPOINT }}" \
               cosmos-database-name="${{ secrets.COSMOS_DATABASE_NAME }}" \
               cosmos-container-name="${{ secrets.COSMOS_CONTAINER_NAME }}" \
@@ -143,6 +146,7 @@ jobs:
               alpha-vantage-key="${{ secrets.ALPHA_VANTAGE_KEY }}" \
             --env-vars \
               "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string" \
+              "APPLICATIONINSIGHTS_WORKSPACE_ID=secretref:appinsights-workspace-id" \
               "COSMOS_ENDPOINT=secretref:cosmos-endpoint" \
               "COSMOS_DATABASE_NAME=secretref:cosmos-database-name" \
               "COSMOS_CONTAINER_NAME=secretref:cosmos-container-name" \

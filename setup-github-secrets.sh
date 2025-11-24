@@ -62,7 +62,7 @@ echo -e "${GREEN}✅ Service Principal 생성됨${NC}"
 echo -e "\n${YELLOW}[2/9]${NC} AZURE_CREDENTIALS Secret 설정..."
 echo "$AZURE_CREDS" | gh secret set AZURE_CREDENTIALS
 
-echo -e "\n${YELLOW}[3/9]${NC} APPLICATIONINSIGHTS_CONNECTION_STRING Secret 설정..."
+echo -e "\n${YELLOW}[3/10]${NC} APPLICATIONINSIGHTS_CONNECTION_STRING Secret 설정..."
 if [ -n "$APPLICATIONINSIGHTS_CONNECTION_STRING" ]; then
     echo "$APPLICATIONINSIGHTS_CONNECTION_STRING" | gh secret set APPLICATIONINSIGHTS_CONNECTION_STRING
     echo -e "${GREEN}✅ 설정 완료${NC}"
@@ -70,7 +70,15 @@ else
     echo -e "${YELLOW}⚠️  .env에 값이 없습니다. 수동 설정 필요${NC}"
 fi
 
-echo -e "\n${YELLOW}[4/9]${NC} COSMOS_ENDPOINT Secret 설정..."
+echo -e "\n${YELLOW}[4/10]${NC} APPLICATIONINSIGHTS_WORKSPACE_ID Secret 설정..."
+if [ -n "$APPLICATIONINSIGHTS_WORKSPACE_ID" ]; then
+    echo "$APPLICATIONINSIGHTS_WORKSPACE_ID" | gh secret set APPLICATIONINSIGHTS_WORKSPACE_ID
+    echo -e "${GREEN}✅ 설정 완료${NC}"
+else
+    echo -e "${YELLOW}⚠️  .env에 값이 없습니다. 수동 설정 필요${NC}"
+fi
+
+echo -e "\n${YELLOW}[5/10]${NC} COSMOS_ENDPOINT Secret 설정...""
 if [ -n "$COSMOS_ENDPOINT" ]; then
     echo "$COSMOS_ENDPOINT" | gh secret set COSMOS_ENDPOINT
     echo -e "${GREEN}✅ 설정 완료${NC}"
@@ -78,7 +86,7 @@ else
     echo -e "${YELLOW}⚠️  .env에 값이 없습니다. 수동 설정 필요${NC}"
 fi
 
-echo -e "\n${YELLOW}[5/9]${NC} COSMOS_KEY Secret 설정..."
+echo -e "\n${YELLOW}[6/10]${NC} COSMOS_KEY Secret 설정...""
 if [ -n "$COSMOS_KEY" ]; then
     echo "$COSMOS_KEY" | gh secret set COSMOS_KEY
     echo -e "${GREEN}✅ 설정 완료${NC}"
@@ -86,15 +94,15 @@ else
     echo -e "${YELLOW}⚠️  .env에 값이 없습니다. 수동 설정 필요${NC}"
 fi
 
-echo -e "\n${YELLOW}[6/9]${NC} COSMOS_DATABASE_NAME Secret 설정..."
+echo -e "\n${YELLOW}[7/10]${NC} COSMOS_DATABASE_NAME Secret 설정..."
 echo "${COSMOS_DATABASE_NAME:-etf-agent}" | gh secret set COSMOS_DATABASE_NAME
 echo -e "${GREEN}✅ 설정 완료${NC}"
 
-echo -e "\n${YELLOW}[7/9]${NC} COSMOS_CONTAINER_NAME Secret 설정..."
+echo -e "\n${YELLOW}[8/10]${NC} COSMOS_CONTAINER_NAME Secret 설정..."
 echo "${COSMOS_CONTAINER_NAME:-etf-data}" | gh secret set COSMOS_CONTAINER_NAME
 echo -e "${GREEN}✅ 설정 완료${NC}"
 
-echo -e "\n${YELLOW}[8/9]${NC} OPENAI_API_KEY Secret 설정..."
+echo -e "\n${YELLOW}[9/10]${NC} OPENAI_API_KEY Secret 설정..."
 if [ -n "$OPENAI_API_KEY" ]; then
     echo "$OPENAI_API_KEY" | gh secret set OPENAI_API_KEY
     echo -e "${GREEN}✅ 설정 완료${NC}"
@@ -102,7 +110,7 @@ else
     echo -e "${YELLOW}⚠️  .env에 값이 없습니다. 수동 설정 필요${NC}"
 fi
 
-echo -e "\n${YELLOW}[9/9]${NC} 외부 API Keys Secret 설정..."
+echo -e "\n${YELLOW}[10/10]${NC} 외부 API Keys Secret 설정..."
 if [ -n "$ALPHA_VANTAGE_API_KEY" ]; then
     echo "$ALPHA_VANTAGE_API_KEY" | gh secret set ALPHA_VANTAGE_API_KEY
     echo -e "${GREEN}✅ ALPHA_VANTAGE_API_KEY 설정 완료${NC}"

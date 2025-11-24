@@ -164,6 +164,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
   const simulationTimeRef = useRef<number>(0);
   const lastParticleCountRef = useRef(0);
   const lastCountUpdateRef = useRef(0);
+  const currentStatusCodeRef = useRef<number | null>(null);
 
   const MAX_PARTICLES = 50;
   const WIDTH = 1200;
@@ -201,10 +202,10 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
     scene.background = new THREE.Color(0x0a1929);
     sceneRef.current = scene;
 
-    // Camera 설정 - 표준 2D (왼쪽 상단 원점)
+    // Camera 설정 - 확장된 2D (음수 X 포함)
     const camera = new THREE.OrthographicCamera(
-      0, // left
-      containerWidth, // right
+      -50, // left - 음수 영역 포함
+      containerWidth, // right - 오른쪽 확장
       0, // top
       HEIGHT, // bottom
       -10, // near (음수 가능)
@@ -250,13 +251,17 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
 
     // 배경 요소
     const POSITIONS = {
-      IN_X: 80,
+      IN_X: 40,
       IN_Y: HEIGHT / 2,
       PIPE_X: containerWidth * 0.5,
       PIPE_Y: HEIGHT / 2,
       OUT_X: containerWidth - 80,
       OUT_Y: HEIGHT / 2,
     };
+
+    // 파티클 시작/종료 지점 (화면 밖)
+    const PARTICLE_START_X = -120;
+    const PARTICLE_END_X = containerWidth + 10;
 
     // Processing Pipeline Box
     const pipelineGeometry = new THREE.PlaneGeometry(containerWidth * 0.2, 60);
@@ -361,13 +366,13 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
       uniforms: {
         time: { value: 0 },
         inPosition: {
-          value: new THREE.Vector2(POSITIONS.IN_X, POSITIONS.IN_Y),
+          value: new THREE.Vector2(PARTICLE_START_X, POSITIONS.IN_Y),
         },
         pipePosition: {
           value: new THREE.Vector2(POSITIONS.PIPE_X, POSITIONS.PIPE_Y),
         },
         outPosition: {
-          value: new THREE.Vector2(POSITIONS.OUT_X, POSITIONS.OUT_Y),
+          value: new THREE.Vector2(PARTICLE_END_X, POSITIONS.OUT_Y),
         },
       },
       vertexShader,

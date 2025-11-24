@@ -53,7 +53,17 @@ if [ -n "$APPLICATIONINSIGHTS_CONNECTION_STRING" ]; then
         --resource-group $RESOURCE_GROUP \
         --secrets applicationinsights-connection-string="$APPLICATIONINSIGHTS_CONNECTION_STRING" \
         --output none
-    echo -e "${GREEN}   ✅ Application Insights 설정 완료${NC}"
+    echo -e "${GREEN}   ✅ Application Insights Connection String 설정 완료${NC}"
+fi
+
+if [ -n "$APPLICATIONINSIGHTS_WORKSPACE_ID" ]; then
+    echo -e "${YELLOW}   - APPLICATIONINSIGHTS_WORKSPACE_ID${NC}"
+    az containerapp secret set \
+        --name $CONTAINER_APP_NAME \
+        --resource-group $RESOURCE_GROUP \
+        --secrets applicationinsights-workspace-id="$APPLICATIONINSIGHTS_WORKSPACE_ID" \
+        --output none
+    echo -e "${GREEN}   ✅ Application Insights Workspace ID 설정 완료${NC}"
 fi
 
 # Cosmos DB
@@ -169,6 +179,7 @@ az containerapp update \
     --resource-group $RESOURCE_GROUP \
     --set-env-vars \
         "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:applicationinsights-connection-string" \
+        "APPLICATIONINSIGHTS_WORKSPACE_ID=secretref:applicationinsights-workspace-id" \
         "COSMOS_ENDPOINT=secretref:cosmos-endpoint" \
         "COSMOS_DATABASE_NAME=secretref:cosmos-database-name" \
         "COSMOS_CONTAINER_NAME=secretref:cosmos-container-name" \
