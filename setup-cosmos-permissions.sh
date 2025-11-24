@@ -153,15 +153,17 @@ if [ -n "$FIREWALL_ENABLED" ]; then
     echo -e "${YELLOW}⚠️  Cosmos DB에 IP 방화벽이 설정되어 있습니다.${NC}"
     echo -e "${YELLOW}   Container App이 접근할 수 있도록 'Allow access from Azure services' 활성화를 권장합니다.${NC}"
     
-    read -p "Azure 서비스 접근을 허용하시겠습니까? (y/n): " -n 1 -r
+    read -p "Cosmos DB에 모든 IP 접근을 허용하시겠습니까? (y/n): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         az cosmosdb update \
             --name $COSMOS_ACCOUNT_NAME \
             --resource-group $RESOURCE_GROUP \
-            --network-acl-bypass AzureServices
+            --ip-range-filter "0.0.0.0" \
+            --enable-public-network true \
+            --enable-virtual-network false
         
-        echo -e "${GREEN}✅ Azure 서비스 접근 허용 완료${NC}"
+        echo -e "${GREEN}✅ Cosmos DB 네트워크 설정 완료 (0.0.0.0 허용)${NC}"
     fi
 else
     echo -e "${GREEN}✅ 방화벽 설정이 없거나 Azure 서비스 접근이 허용되어 있습니다.${NC}"

@@ -84,10 +84,11 @@ az monitor app-insights component show \
 
 #### 3. Cosmos DB
 
-**`COSMOS_ACCOUNT_NAME`** (선택사항)
+**`COSMOS_ACCOUNT_NAME`** (필수)
 ```bash
-# Cosmos DB 계정 이름 (기본값: cosmosskappinsights)
-# 다른 이름을 사용하는 경우에만 설정 필요
+# Cosmos DB 계정 이름
+# GitHub Actions에서 Cosmos DB 네트워크 ACL 설정에 사용됩니다
+# 예: cosmosskappinsights
 ```
 
 **`COSMOS_ENDPOINT`**
@@ -95,9 +96,10 @@ az monitor app-insights component show \
 # 예: https://your-cosmos-account.documents.azure.com:443/
 ```
 
-**`COSMOS_KEY`**
+**`COSMOS_KEY`** (선택사항 - Azure AD 인증 사용 시 불필요)
 ```bash
 # Azure Portal → Cosmos DB → Keys → Primary Key
+# Azure AD (RBAC) 인증을 사용하는 경우 생략 가능 (권장)
 ```
 
 **`COSMOS_DATABASE_NAME`**
@@ -110,23 +112,44 @@ az monitor app-insights component show \
 # 예: etf-data
 ```
 
-#### 4. OpenAI
+#### 4. AI 서비스
+
+**옵션 1: Azure OpenAI (권장)**
+
+**`AZURE_OPENAI_ENDPOINT`**
+```bash
+# 예: https://your-openai-resource.openai.azure.com/
+```
+
+**`AZURE_OPENAI_API_KEY`**
+```bash
+# Azure Portal → Azure OpenAI → Keys and Endpoint → KEY 1
+```
+
+**`AZURE_OPENAI_DEPLOYMENT_NAME`**
+```bash
+# 예: gpt-4o-mini
+```
+
+**`AZURE_OPENAI_API_VERSION`**
+```bash
+# 예: 2024-08-01-preview
+```
+
+**옵션 2: OpenAI (Azure OpenAI 사용 시 불필요)**
 
 **`OPENAI_API_KEY`**
 ```bash
 # OpenAI API 키
+# Azure OpenAI를 사용하는 경우 생략 가능
 ```
 
 #### 5. 외부 API (선택사항)
 
-**`ALPHA_VANTAGE_API_KEY`**
+**`ALPHA_VANTAGE_KEY`**
 ```bash
 # Alpha Vantage API 키
-```
-
-**`FINNHUB_API_KEY`**
-```bash
-# Finnhub API 키
+# yfinance fallback용, 선택적
 ```
 
 ---

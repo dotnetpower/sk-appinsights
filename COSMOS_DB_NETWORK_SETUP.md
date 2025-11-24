@@ -242,12 +242,14 @@ This is blocked by your Cosmos DB account firewall settings.
 
 Container App Environment가 VNet 통합 없이 생성된 경우 Static IP가 없을 수 있습니다.
 
-#### 해결 방법 1: Allow Azure services
+#### 해결 방법 1: IP 기반 방화벽 규칙 (모든 IP 허용)
 ```bash
 az cosmosdb update \
   --name cosmosskappinsights \
   --resource-group rg-sk-appinsights \
-  --network-acl-bypass AzureServices
+  --ip-range-filter "0.0.0.0" \
+  --enable-public-network true \
+  --enable-virtual-network false
 ```
 
 #### 해결 방법 2: VNet 통합 환경 재생성

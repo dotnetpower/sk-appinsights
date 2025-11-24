@@ -8,7 +8,7 @@ import asyncio
 import logging
 import sys
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import httpx
 
@@ -77,7 +77,7 @@ class ApplicationMapTester:
         endpoint: str,
         description: str,
         method: str = "GET",
-        json_data: Optional[Dict] = None
+        json_data: Dict | None = None
     ) -> Tuple[bool, Dict]:
         """개별 엔드포인트 테스트"""
         operation_id = self.generate_operation_id(endpoint)

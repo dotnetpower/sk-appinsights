@@ -22,6 +22,8 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.sdk.resources import Resource
 
+from ..config import get_settings
+
 logger = logging.getLogger(__name__)
 
 # Application Insights TelemetryClient (pageViews 및 customEvents 전송용)
@@ -84,11 +86,19 @@ def setup_telemetry(app=None):
             _telemetry_client.channel.flush()
             logger.info("✅ TelemetryClient initialized → pageViews, customEvents 테이블")
         
+        # 서비스 이름 결정: FastAPI 앱이 제공되면 앱 제목 사용, 아니면 기본값
+        service_name = app.title if app and hasattr(app, 'title') else "etf-agent"
+        service_version = app.version if app and hasattr(app, 'version') else "0.1.0"
+        
+        # 환경변수에서 deployment.environment 가져오기
+        settings = get_settings()
+        deployment_environment = settings.environment
+        
         # 리소스 속성 정의
         resource = Resource.create({
-            "service.name": "etf-agent",
-            "service.version": "0.1.0",
-            "deployment.environment": os.getenv("ENVIRONMENT", "development"),
+            "service.name": service_name,
+            "service.version": service_version,
+            "deployment.environment": deployment_environment,
         })
         
         # Azure Monitor OpenTelemetry 설정
@@ -127,7 +137,7 @@ def setup_telemetry(app=None):
             from azure.core.settings import settings as azure_settings
             from azure.core.tracing.ext.opentelemetry_span import \
                 OpenTelemetrySpan
-            
+
             # Azure SDK에서 OpenTelemetry span을 사용하도록 설정
             azure_settings.tracing_implementation = OpenTelemetrySpan
             
@@ -148,8 +158,8 @@ def setup_telemetry(app=None):
         logger.info("  - exceptions: 예외 발생 시 자동 기록")
         logger.info("")
         logger.info("🗺️  Application Map:")
-        logger.info("  - etf-agent → COSMOS (Cosmos DB)")
-        logger.info("  - etf-agent → External APIs (yfinance, etc.)")
+        logger.info(f"  - {service_name} → COSMOS (Cosmos DB)")
+        logger.info(f"  - {service_name} → External APIs (yfinance, etc.)")
         logger.info("=" * 80)
     except Exception as e:
         logger.error(f"❌ Error configuring telemetry: {e}")
@@ -175,17 +185,20 @@ _page_duration_histogram = None
 _user_event_counter = None
 
 
-def initialize_metrics():
+def initialize_metrics(service_name: str = "etf-agent"):
     """
     커스텀 메트릭 초기화 → customMetrics 테이블
     
     OpenTelemetry Metrics는 customMetrics 테이블에 저장됨
     Live Metrics에도 실시간으로 표시됨
+    
+    Args:
+        service_name: 서비스 이름 (기본값: "etf-agent")
     """
     global _meter, _request_counter, _request_duration, _error_counter
     global _page_view_counter, _page_duration_histogram, _user_event_counter
     
-    _meter = metrics.get_meter("etf-agent.metrics")
+    _meter = metrics.get_meter(f"{service_name}.metrics")
     
     # 요청 카운터 → customMetrics
     _request_counter = _meter.create_counter(

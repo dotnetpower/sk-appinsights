@@ -193,6 +193,9 @@ cp .env.example .env
 
 **필수 환경변수**:
 ```bash
+# Deployment Environment
+ENVIRONMENT=development  # development, staging, production
+
 # Azure Container Registry (배포용)
 CONTAINER_REGISTRY_NAME=crskappinsights
 RESOURCE_GROUP=rg-sk-appinsights
@@ -204,30 +207,47 @@ APPLICATIONINSIGHTS_CONNECTION_STRING="InstrumentationKey=xxx;IngestionEndpoint=
 
 # Azure Cosmos DB (필수)
 COSMOS_ENDPOINT="https://xxx.documents.azure.com:443/"
-# Azure AD (RBAC) 인증 사용 시 - COSMOS_KEY 생략 가능
+# Azure AD (RBAC) 인증 사용 시 - COSMOS_KEY 생략 가능 (권장)
 # COSMOS_KEY="your-cosmos-key"
 COSMOS_DATABASE_NAME="etf-agent"
 COSMOS_CONTAINER_NAME="etf-data"  # partition key = /symbol
+COSMOS_ACCOUNT_NAME="cosmosskappinsights"  # GitHub Actions용
 
-# OpenAI (필수 - AI 채팅 기능)
-OPENAI_API_KEY="sk-xxx"
-OPENAI_ORG_ID=""
-
-# Azure OpenAI (Alternative)
+# AI 서비스 - Azure OpenAI (권장) 또는 OpenAI
+# 옵션 1: Azure OpenAI (권장)
 AZURE_OPENAI_ENDPOINT="https://xxx.openai.azure.com/"
 AZURE_OPENAI_API_KEY="xxx"
 AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o-mini"
 AZURE_OPENAI_API_VERSION="2024-08-01-preview"
 
-# 주식 데이터 API (선택적, 무료 티어 사용 가능)
+# 옵션 2: OpenAI (Azure OpenAI 사용 시 불필요)
+OPENAI_API_KEY="sk-xxx"
+OPENAI_ORG_ID=""
+
+# 주식 데이터 API (선택적, yfinance fallback)
 ALPHA_VANTAGE_KEY="your-alpha-vantage-key"  # alphavantage.co
 
-# FastAPI
+# FastAPI (로컬 개발용)
 API_HOST=0.0.0.0
 API_PORT=8000
 
-# React Frontend
+# React Frontend (로컬 개발용)
 REACT_APP_API_URL=http://localhost:8000
+```
+
+#### 환경변수 우선순위
+
+- **AI 서비스**: Azure OpenAI > OpenAI
+  - Azure OpenAI가 설정되어 있으면 OPENAI_API_KEY는 무시됩니다
+- **Cosmos DB 인증**: Azure AD (DefaultAzureCredential) > COSMOS_KEY
+  - Azure AD 인증 사용 시 COSMOS_KEY는 불필요합니다 (권장)
+
+#### 선택적 환경변수
+
+- `OPENAI_API_KEY`: Azure OpenAI 사용 시 불필요
+- `OPENAI_ORG_ID`: OpenAI Organization 사용 시에만 필요
+- `COSMOS_KEY`: Azure AD 인증 사용 시 불필요 (권장)
+- `ALPHA_VANTAGE_KEY`: yfinance 우선 사용, Alpha Vantage는 fallback
 ```
 
 ### 3. Backend 실행
@@ -273,6 +293,50 @@ npm start
 # VSCode에서 Ctrl+Shift+B
 # "Start All Services" 선택 → Backend + Frontend 동시 실행
 ```
+
+## 환경변수 전파 프로세스
+
+### 로컬 개발 환경
+
+```
+.env 파일
+    │
+    ├──→ Python Backend (src/config.py)
+    │    └── os.getenv() → 모든 백엔드 서비스
+    │
+    └──→ React Frontend (process.env)
+         └── REACT_APP_* → npm start → 개발 서버
+```
+
+### 프로덕션 배포 (GitHub Actions → Azure)
+
+```
+.env 파일
+    │
+    └──→ setup-github-secrets.sh
+              │
+              ▼
+         GitHub Secrets
+              │
+              ├──→ GitHub Actions Workflow
+              │    ├── Docker build-arg (Frontend 빌드 타임)
+              │    │   └── REACT_APP_VERSION, REACT_APP_GIT_COMMIT
+              │    └── az containerapp secret set
+              │
+              ▼
+         Container App Secrets
+              │
+              └──→ Container Environment Variables
+                        │
+                        └──→ Running Container
+                             ├── Python: os.getenv()
+                             └── React: 빌드 타임 주입 값 사용
+```
+
+**주의사항**:
+- React 환경변수는 **빌드 타임**에 번들에 포함됩니다
+- Container App의 런타임 환경변수는 React에서 접근할 수 없습니다
+- `REACT_APP_API_URL`을 빈 값으로 설정하여 상대경로를 사용하는 것을 권장합니다
 
 ## 개발 워크플로우
 

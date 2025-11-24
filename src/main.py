@@ -9,12 +9,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
 
 from .api import analytics, chat, etf, news, stocks
 from .observability import (TracingMiddleware, initialize_metrics,
                             setup_telemetry)
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
 
 app = FastAPI(
     title="ETF Agent API",
@@ -47,7 +47,7 @@ app.add_middleware(
 )
 
 # 커스텀 메트릭 초기화 (Live Metrics용)
-initialize_metrics()
+initialize_metrics(service_name=app.title)
 
 # Tracing 미들웨어 추가 (Live Metrics 데이터 수집)
 app.add_middleware(TracingMiddleware)

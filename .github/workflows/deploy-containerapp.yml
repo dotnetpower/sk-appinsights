@@ -159,16 +159,18 @@ jobs:
         echo "🌐 Cosmos DB 네트워크 ACL 설정 중..."
         echo "=========================================="
         
-        # Cosmos DB에서 Azure 서비스 접근 허용
-        echo "🔓 Cosmos DB에서 Azure 서비스 접근 허용 중..."
+        # Cosmos DB에 모든 IP 허용 (0.0.0.0) 및 Selected Networks로 설정
+        echo "🔓 Cosmos DB 네트워크 설정 중..."
         az cosmosdb update \
           --name ${{ env.COSMOS_ACCOUNT_NAME }} \
           --resource-group ${{ env.RESOURCE_GROUP }} \
-          --network-acl-bypass AzureServices
+          --ip-range-filter "0.0.0.0" \
+          --enable-public-network true \
+          --enable-virtual-network false
         
         echo "✅ Cosmos DB 네트워크 ACL 설정 완료!"
         echo ""
-        echo "⚠️  참고: Cosmos DB에서 Azure 서비스의 접근이 허용되었습니다."
+        echo "⚠️  참고: Cosmos DB에 모든 IP(0.0.0.0)의 접근이 허용되었습니다."
         echo "   보안을 위해 Azure AD 인증을 사용하고 있습니다."
     
     - name: 🎉 Get App URL

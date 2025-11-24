@@ -2,16 +2,12 @@
 Alpha Vantage API 클라이언트
 """
 import logging
-import os
 from typing import Any, Dict, Optional
 
 import requests
-from dotenv import load_dotenv
 
+from ..config import get_settings
 from ..observability import trace_span
-
-# .env 파일 로드
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +16,8 @@ class AlphaVantageClient:
     """Alpha Vantage API 클라이언트"""
     
     def __init__(self):
-        self.api_key = os.getenv("ALPHA_VANTAGE_KEY")
+        settings = get_settings()
+        self.api_key = settings.alpha_vantage_key
         if not self.api_key:
             logger.warning("ALPHA_VANTAGE_KEY not set")
         self.base_url = "https://www.alphavantage.co/query"

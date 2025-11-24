@@ -82,7 +82,7 @@
     {
       "label": "Python: Run Tests",
       "type": "shell",
-      "command": "source .venv/bin/activate && pytest -v",
+      "command": "source .venv/bin/activate && pytest tests/ -v",
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
@@ -91,6 +91,34 @@
       "group": {
         "kind": "test",
         "isDefault": true
+      }
+    },
+    {
+      "label": "Python: Run Tests with Coverage",
+      "type": "shell",
+      "command": "source .venv/bin/activate && pytest tests/ -v --cov=src --cov-report=html --cov-report=term",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Python: Run Integration Tests",
+      "type": "shell",
+      "command": "source .venv/bin/activate && pytest tests/ -v -m integration",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
       }
     },
     {
