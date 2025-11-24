@@ -226,7 +226,7 @@ function App() {
                 color="inherit"
                 aria-label="메뉴 열기"
                 aria-expanded={drawerOpen}
-                aria-controls="mobile-menu-drawer"
+                aria-controls="mobile-menu-list"
                 edge="start"
                 onClick={handleDrawerToggle}
                 sx={{ mr: 2 }}
@@ -285,6 +285,8 @@ function App() {
                   label={item.name}
                   icon={item.icon}
                   iconPosition="start"
+                  id={`tab-${index}`}
+                  aria-controls={`tabpanel-${index}`}
                 />
               ))}
             </Tabs>
@@ -326,7 +328,7 @@ function App() {
             </Typography>
           </Box>
           <Divider />
-          <List>
+          <List id="mobile-menu-list">
             {menuItems.map((item, index) => (
               <ListItem key={item.id} disablePadding>
                 <ListItemButton
