@@ -174,7 +174,7 @@ function App() {
   // URL 기반으로 현재 탭 인덱스 계산
   const getCurrentTabIndex = () => {
     const currentPath = location.pathname;
-    const index = menuItems.findIndex(item => item.path === currentPath);
+    const index = menuItems.findIndex((item) => item.path === currentPath);
     return index >= 0 ? index : 0;
   };
 
