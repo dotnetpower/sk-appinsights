@@ -24,7 +24,7 @@ const getPadding = (containerWidth: number) => {
   if (containerWidth < 400) {
     return { top: 12, right: 8, bottom: 28, left: 48 };
   }
-  return { top: 16, right: 16, bottom: 32, left: 68 };
+  return { top: 16, right: 16, bottom: 30, left: 68 };
 };
 
 const colorFromStatusCode = (statusCode: number): number => {
@@ -138,24 +138,30 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
       projectedPointsRef.current = projected;
 
       const tickCount = isMobileView ? 3 : 4;
-      const nextXTicks: AxisTick[] = Array.from({ length: tickCount }, (_, index) => {
-        const ratio = index / (tickCount - 1);
-        const ts = domainMin + ratio * domainRange;
-        return {
-          label: formatTimestamp(ts, isMobileView),
-          position: padding.left + plotWidth * ratio,
-        };
-      });
+      const nextXTicks: AxisTick[] = Array.from(
+        { length: tickCount },
+        (_, index) => {
+          const ratio = index / (tickCount - 1);
+          const ts = domainMin + ratio * domainRange;
+          return {
+            label: formatTimestamp(ts, isMobileView),
+            position: padding.left + plotWidth * ratio,
+          };
+        }
+      );
 
       const yTickCount = isMobileView ? 4 : 5;
-      const nextYTicks: AxisTick[] = Array.from({ length: yTickCount }, (_, index) => {
-        const ratio = index / (yTickCount - 1);
-        const durationValue = Math.round(maxDuration * (1 - ratio));
-        return {
-          label: `${durationValue}ms`,
-          position: padding.top + plotHeight * ratio,
-        };
-      });
+      const nextYTicks: AxisTick[] = Array.from(
+        { length: yTickCount },
+        (_, index) => {
+          const ratio = index / (yTickCount - 1);
+          const durationValue = Math.round(maxDuration * (1 - ratio));
+          return {
+            label: `${durationValue}ms`,
+            position: padding.top + plotHeight * ratio,
+          };
+        }
+      );
 
       setAxisTicks({ x: nextXTicks, y: nextYTicks });
     },

@@ -257,13 +257,15 @@ const LiveTrafficChart: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ 
-        display: "flex", 
-        alignItems: "center", 
-        mb: { xs: 2, sm: 3 },
-        flexWrap: "wrap",
-        gap: 1,
-      }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          mb: { xs: 2, sm: 3 },
+          flexWrap: "wrap",
+          gap: 1,
+        }}
+      >
         <Typography variant={isMobile ? "h5" : "h4"} sx={{ flexGrow: 1 }}>
           실시간 트래픽 모니터링
         </Typography>
@@ -279,20 +281,46 @@ const LiveTrafficChart: React.FC = () => {
         />
       </Box>
       {/* 현재 메트릭 카드 */}
-      <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }} sx={{ mb: { xs: 2, sm: 3 } }}>
+      <Grid
+        container
+        spacing={{ xs: 1.5, sm: 2, md: 3 }}
+        sx={{ mb: { xs: 2, sm: 3 } }}
+      >
         <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: { xs: 0.5, sm: 1 } }}>
-                <TrendingUpIcon color="primary" sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }} />
-                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+            <CardContent
+              sx={{
+                p: { xs: 1.5, sm: 2 },
+                "&:last-child": { pb: { xs: 1.5, sm: 2 } },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  mb: { xs: 0.5, sm: 1 },
+                }}
+              >
+                <TrendingUpIcon
+                  color="primary"
+                  sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }}
+                />
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                >
                   요청 수
                 </Typography>
               </Box>
               <Typography variant={isMobile ? "h5" : "h4"}>
                 {currentMetrics?.request_count || 0}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
+              >
                 최근 1분
               </Typography>
             </CardContent>
@@ -301,20 +329,50 @@ const LiveTrafficChart: React.FC = () => {
 
         <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: { xs: 0.5, sm: 1 } }}>
-                <SpeedIcon color="info" sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }} />
-                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+            <CardContent
+              sx={{
+                p: { xs: 1.5, sm: 2 },
+                "&:last-child": { pb: { xs: 1.5, sm: 2 } },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  mb: { xs: 0.5, sm: 1 },
+                }}
+              >
+                <SpeedIcon
+                  color="info"
+                  sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }}
+                />
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                >
                   평균 응답시간
                 </Typography>
               </Box>
-              <Typography variant={isMobile ? "h5" : "h4"} sx={{ display: "flex", alignItems: "baseline" }}>
+              <Typography
+                variant={isMobile ? "h5" : "h4"}
+                sx={{ display: "flex", alignItems: "baseline" }}
+              >
                 {currentMetrics?.avg_duration
                   ? Math.round(currentMetrics.avg_duration)
                   : 0}
-                <Typography component="span" sx={{ fontSize: { xs: "0.875rem", sm: "1rem" }, ml: 0.5 }}>ms</Typography>
+                <Typography
+                  component="span"
+                  sx={{ fontSize: { xs: "0.875rem", sm: "1rem" }, ml: 0.5 }}
+                >
+                  ms
+                </Typography>
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
+              >
                 최근 1분
               </Typography>
             </CardContent>
@@ -323,17 +381,39 @@ const LiveTrafficChart: React.FC = () => {
 
         <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: { xs: 0.5, sm: 1 } }}>
-                <ErrorIcon color="error" sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }} />
-                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+            <CardContent
+              sx={{
+                p: { xs: 1.5, sm: 2 },
+                "&:last-child": { pb: { xs: 1.5, sm: 2 } },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  mb: { xs: 0.5, sm: 1 },
+                }}
+              >
+                <ErrorIcon
+                  color="error"
+                  sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }}
+                />
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                >
                   에러 수
                 </Typography>
               </Box>
               <Typography variant={isMobile ? "h5" : "h4"}>
                 {currentMetrics?.error_count || 0}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
+              >
                 최근 1분
               </Typography>
             </CardContent>
@@ -342,8 +422,19 @@ const LiveTrafficChart: React.FC = () => {
 
         <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: { xs: 0.5, sm: 1 } }}>
+            <CardContent
+              sx={{
+                p: { xs: 1.5, sm: 2 },
+                "&:last-child": { pb: { xs: 1.5, sm: 2 } },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  mb: { xs: 0.5, sm: 1 },
+                }}
+              >
                 <CheckCircleIcon
                   color={
                     currentMetrics
@@ -352,17 +443,33 @@ const LiveTrafficChart: React.FC = () => {
                   }
                   sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }}
                 />
-                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                >
                   성공률
                 </Typography>
               </Box>
-              <Typography variant={isMobile ? "h5" : "h4"} sx={{ display: "flex", alignItems: "baseline" }}>
+              <Typography
+                variant={isMobile ? "h5" : "h4"}
+                sx={{ display: "flex", alignItems: "baseline" }}
+              >
                 {currentMetrics?.success_rate
                   ? currentMetrics.success_rate.toFixed(1)
                   : 100}
-                <Typography component="span" sx={{ fontSize: { xs: "0.875rem", sm: "1rem" }, ml: 0.5 }}>%</Typography>
+                <Typography
+                  component="span"
+                  sx={{ fontSize: { xs: "0.875rem", sm: "1rem" }, ml: 0.5 }}
+                >
+                  %
+                </Typography>
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
+              >
                 최근 1분
               </Typography>
             </CardContent>
@@ -371,7 +478,10 @@ const LiveTrafficChart: React.FC = () => {
       </Grid>
 
       {/* 실시간 요청 흐름 */}
-      <RequestFlowChartThree latestRequest={latestRequest} isMobile={isMobile} />
+      <RequestFlowChartThree
+        latestRequest={latestRequest}
+        isMobile={isMobile}
+      />
 
       {/* 분산형 차트 - 응답시간 분포 */}
       <Paper sx={{ p: { xs: 1.5, sm: 2, md: 3 }, mb: { xs: 2, sm: 3 } }}>
@@ -408,7 +518,11 @@ const LiveTrafficChart: React.FC = () => {
               tick={{ fontSize: isMobile ? 10 : 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis stroke="#888" tick={{ fontSize: isMobile ? 10 : 12 }} width={isMobile ? 35 : 60} />
+            <YAxis
+              stroke="#888"
+              tick={{ fontSize: isMobile ? 10 : 12 }}
+              width={isMobile ? 35 : 60}
+            />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1a2332",
@@ -444,7 +558,11 @@ const LiveTrafficChart: React.FC = () => {
               tick={{ fontSize: isMobile ? 10 : 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis stroke="#888" tick={{ fontSize: isMobile ? 10 : 12 }} width={isMobile ? 35 : 60} />
+            <YAxis
+              stroke="#888"
+              tick={{ fontSize: isMobile ? 10 : 12 }}
+              width={isMobile ? 35 : 60}
+            />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1a2332",
@@ -480,7 +598,11 @@ const LiveTrafficChart: React.FC = () => {
               tick={{ fontSize: isMobile ? 10 : 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis stroke="#888" tick={{ fontSize: isMobile ? 10 : 12 }} width={isMobile ? 35 : 60} />
+            <YAxis
+              stroke="#888"
+              tick={{ fontSize: isMobile ? 10 : 12 }}
+              width={isMobile ? 35 : 60}
+            />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1a2332",

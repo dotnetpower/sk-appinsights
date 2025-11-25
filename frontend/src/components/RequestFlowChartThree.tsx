@@ -308,7 +308,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
     const POSITIONS = {
       IN_X: -10,
       IN_Y: HEIGHT / 2,
-      PIPE_X: containerWidth * 0.5,
+      PIPE_X: containerWidth / 2,
       PIPE_Y: HEIGHT / 2,
       OUT_X: containerWidth - 40,
       OUT_Y: HEIGHT / 2,
@@ -319,7 +319,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
     const PARTICLE_END_X = containerWidth + 10;
 
     // Processing Pipeline Box
-    const pipelineGeometry = new THREE.PlaneGeometry(containerWidth * 0.2, 60);
+    const pipelineGeometry = new THREE.PlaneGeometry(160, 60);
     const pipelineMaterial = new THREE.MeshBasicMaterial({
       color: 0x2d4a6f,
       side: THREE.DoubleSide,
@@ -672,7 +672,9 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
           gap: 1,
         }}
       >
-        <Typography variant={isMobile ? "subtitle1" : "h6"}>실시간 요청 흐름</Typography>
+        <Typography variant={isMobile ? "subtitle1" : "h6"}>
+          실시간 요청 흐름
+        </Typography>
         <FormControlLabel
           control={
             <Switch
@@ -682,7 +684,11 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
               size={isMobile ? "small" : "medium"}
             />
           }
-          label={<Typography variant={isMobile ? "caption" : "body2"}>더미 로그</Typography>}
+          label={
+            <Typography variant={isMobile ? "caption" : "body2"}>
+              더미 로그
+            </Typography>
+          }
         />
       </Box>
 
@@ -735,6 +741,9 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
             fontWeight: 600,
             pointerEvents: "none",
             userSelect: "none",
+            textAlign: "center",
+            width: "auto",
+            zIndex: 10,
           }}
         >
           {isMobile ? "Proc" : "Processing"}
@@ -767,7 +776,11 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
           gap: 0.5,
         }}
       >
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? "0.65rem" : "0.75rem" }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontSize: isMobile ? "0.65rem" : "0.75rem" }}
+        >
           활성 요청: {particleCount}
         </Typography>
 
@@ -782,7 +795,11 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
                 backgroundColor: "#4caf50",
               }}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}
+            >
               &lt;100ms
             </Typography>
           </Box>
@@ -795,7 +812,11 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
                 backgroundColor: "#ffc107",
               }}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}
+            >
               {isMobile ? "200-500" : "200-500ms"}
             </Typography>
           </Box>
@@ -808,7 +829,11 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
                 backgroundColor: "#f44336",
               }}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}
+            >
               {isMobile ? ">1s/Err" : ">1s / Error"}
             </Typography>
           </Box>
