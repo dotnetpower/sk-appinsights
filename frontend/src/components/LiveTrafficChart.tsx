@@ -8,6 +8,8 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import RequestFlowChartThree from "./RequestFlowChartThree";
 import ResponseTimeWebGLCanvas from "./ResponseTimeWebGLCanvas";
@@ -84,6 +86,8 @@ const LiveTrafficChart: React.FC = () => {
   const [scatterData, setScatterData] = useState<ScatterDataPoint[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const maxDataPoints = 60; // 최근 60초 데이터만 유지
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     // WebSocket 연결
@@ -253,105 +257,112 @@ const LiveTrafficChart: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-        <Typography variant="h4" sx={{ flexGrow: 1 }}>
+      <Box sx={{ 
+        display: "flex", 
+        alignItems: "center", 
+        mb: { xs: 2, sm: 3 },
+        flexWrap: "wrap",
+        gap: 1,
+      }}>
+        <Typography variant={isMobile ? "h5" : "h4"} sx={{ flexGrow: 1 }}>
           실시간 트래픽 모니터링
         </Typography>
         <Chip
           label={isConnected ? "실시간 연결됨" : "연결 중..."}
           color={isConnected ? "success" : "default"}
+          size={isMobile ? "small" : "medium"}
           icon={
             isConnected ? undefined : (
-              <CircularProgress size={16} sx={{ ml: 1 }} />
+              <CircularProgress size={isMobile ? 12 : 16} sx={{ ml: 1 }} />
             )
           }
         />
       </Box>
       {/* 현재 메트릭 카드 */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }} sx={{ mb: { xs: 2, sm: 3 } }}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <TrendingUpIcon color="primary" sx={{ mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" fontWeight={600}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: { xs: 0.5, sm: 1 } }}>
+                <TrendingUpIcon color="primary" sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }} />
+                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                   요청 수
                 </Typography>
               </Box>
-              <Typography variant="h4">
+              <Typography variant={isMobile ? "h5" : "h4"}>
                 {currentMetrics?.request_count || 0}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}>
                 최근 1분
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <SpeedIcon color="info" sx={{ mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" fontWeight={600}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: { xs: 0.5, sm: 1 } }}>
+                <SpeedIcon color="info" sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }} />
+                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                   평균 응답시간
                 </Typography>
               </Box>
-              <Typography variant="h4">
+              <Typography variant={isMobile ? "h5" : "h4"} sx={{ display: "flex", alignItems: "baseline" }}>
                 {currentMetrics?.avg_duration
                   ? Math.round(currentMetrics.avg_duration)
                   : 0}
-                ms
+                <Typography component="span" sx={{ fontSize: { xs: "0.875rem", sm: "1rem" }, ml: 0.5 }}>ms</Typography>
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}>
                 최근 1분
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <ErrorIcon color="error" sx={{ mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" fontWeight={600}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: { xs: 0.5, sm: 1 } }}>
+                <ErrorIcon color="error" sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }} />
+                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                   에러 수
                 </Typography>
               </Box>
-              <Typography variant="h4">
+              <Typography variant={isMobile ? "h5" : "h4"}>
                 {currentMetrics?.error_count || 0}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}>
                 최근 1분
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: { xs: 0.5, sm: 1 } }}>
                 <CheckCircleIcon
                   color={
                     currentMetrics
                       ? getStatusColor(currentMetrics.success_rate)
                       : "success"
                   }
-                  sx={{ mr: 1, fontSize: 20 }}
+                  sx={{ mr: 0.5, fontSize: { xs: 16, sm: 20 } }}
                 />
-                <Typography variant="subtitle1" fontWeight={600}>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
                   성공률
                 </Typography>
               </Box>
-              <Typography variant="h4">
+              <Typography variant={isMobile ? "h5" : "h4"} sx={{ display: "flex", alignItems: "baseline" }}>
                 {currentMetrics?.success_rate
                   ? currentMetrics.success_rate.toFixed(1)
                   : 100}
-                %
+                <Typography component="span" sx={{ fontSize: { xs: "0.875rem", sm: "1rem" }, ml: 0.5 }}>%</Typography>
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}>
                 최근 1분
               </Typography>
             </CardContent>
@@ -360,11 +371,11 @@ const LiveTrafficChart: React.FC = () => {
       </Grid>
 
       {/* 실시간 요청 흐름 */}
-      <RequestFlowChartThree latestRequest={latestRequest} />
+      <RequestFlowChartThree latestRequest={latestRequest} isMobile={isMobile} />
 
       {/* 분산형 차트 - 응답시간 분포 */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper sx={{ p: { xs: 1.5, sm: 2, md: 3 }, mb: { xs: 2, sm: 3 } }}>
+        <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
           응답시간 분포
           <Typography component="span" variant="caption" sx={{ ml: 1 }}>
             데이터 {scatterData.length}건
@@ -372,17 +383,17 @@ const LiveTrafficChart: React.FC = () => {
         </Typography>
         <ResponseTimeWebGLCanvas
           data={scatterData}
-          height={280}
+          height={isMobile ? 200 : 280}
           rangeMs={120000}
         />
       </Paper>
 
       {/* 실시간 트래픽 그래프 */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper sx={{ p: { xs: 1.5, sm: 2, md: 3 }, mb: { xs: 2, sm: 3 } }}>
+        <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
           실시간 요청 트래픽 (최근 60초)
         </Typography>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={isMobile ? 200 : 300}>
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
@@ -394,17 +405,18 @@ const LiveTrafficChart: React.FC = () => {
             <XAxis
               dataKey="time"
               stroke="#888"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: isMobile ? 10 : 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis stroke="#888" />
+            <YAxis stroke="#888" tick={{ fontSize: isMobile ? 10 : 12 }} width={isMobile ? 35 : 60} />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1a2332",
                 border: "1px solid #333",
+                fontSize: isMobile ? 12 : 14,
               }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: isMobile ? 12 : 14 }} />
             <Area
               type="monotone"
               dataKey="requests"
@@ -419,27 +431,28 @@ const LiveTrafficChart: React.FC = () => {
       </Paper>
 
       {/* 응답 시간 그래프 */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper sx={{ p: { xs: 1.5, sm: 2, md: 3 }, mb: { xs: 2, sm: 3 } }}>
+        <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
           평균 응답 시간 (ms)
         </Typography>
-        <ResponsiveContainer width="100%" height={250}>
+        <ResponsiveContainer width="100%" height={isMobile ? 180 : 250}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#333" />
             <XAxis
               dataKey="time"
               stroke="#888"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: isMobile ? 10 : 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis stroke="#888" />
+            <YAxis stroke="#888" tick={{ fontSize: isMobile ? 10 : 12 }} width={isMobile ? 35 : 60} />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1a2332",
                 border: "1px solid #333",
+                fontSize: isMobile ? 12 : 14,
               }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: isMobile ? 12 : 14 }} />
             <Line
               type="monotone"
               dataKey="duration"
@@ -454,33 +467,34 @@ const LiveTrafficChart: React.FC = () => {
       </Paper>
 
       {/* 에러 발생 그래프 */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+        <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
           에러 발생 추이
         </Typography>
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={isMobile ? 150 : 200}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#333" />
             <XAxis
               dataKey="time"
               stroke="#888"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: isMobile ? 10 : 12 }}
               interval="preserveStartEnd"
             />
-            <YAxis stroke="#888" />
+            <YAxis stroke="#888" tick={{ fontSize: isMobile ? 10 : 12 }} width={isMobile ? 35 : 60} />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1a2332",
                 border: "1px solid #333",
+                fontSize: isMobile ? 12 : 14,
               }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: isMobile ? 12 : 14 }} />
             <Line
               type="monotone"
               dataKey="errors"
               stroke="#f44336"
               strokeWidth={2}
-              dot={{ r: 3 }}
+              dot={{ r: isMobile ? 2 : 3 }}
               name="에러 수"
               animationDuration={300}
             />

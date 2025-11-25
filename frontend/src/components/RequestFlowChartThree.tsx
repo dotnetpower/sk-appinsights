@@ -28,6 +28,7 @@ interface RequestEvent {
 
 interface RequestFlowChartThreeProps {
   latestRequest: RequestEvent | null;
+  isMobile?: boolean;
 }
 
 // GPU에서 실행될 Vertex Shader
@@ -159,6 +160,7 @@ const fragmentShader = `
 
 const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
   latestRequest,
+  isMobile = false,
 }) => {
   const [particleCount, setParticleCount] = useState(0);
   const [useDummyLogs, setUseDummyLogs] = useState(true);
@@ -173,8 +175,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
   const lastCountUpdateRef = useRef(0);
 
   const MAX_PARTICLES = 50;
-  const WIDTH = 1200;
-  const HEIGHT = 200;
+  const HEIGHT = isMobile ? 150 : 200;
   const COUNT_UPDATE_INTERVAL = 200; // ms 간격으로만 UI 업데이트
 
   // 더미 로그 상태 초기화
@@ -249,7 +250,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
     if (!containerRef.current) return;
 
     const container = containerRef.current;
-    const containerWidth = container.clientWidth || WIDTH;
+    const containerWidth = container.clientWidth || 300; // fallback for SSR or initial render
 
     // Scene 설정
     const scene = new THREE.Scene();
@@ -538,9 +539,9 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
       renderer.dispose();
       container.removeChild(renderer.domElement);
     };
-  }, []);
+  }, [HEIGHT]); // Re-initialize when HEIGHT changes
 
-  // 새 파티클 추가
+  // Add new particle
   useEffect(() => {
     if (!latestRequest || !pointsRef.current) return;
 
@@ -660,25 +661,28 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
   }, [latestRequest]);
 
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
+    <Paper sx={{ p: { xs: 1.5, sm: 2, md: 3 }, mb: { xs: 2, sm: 3 } }}>
       <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 2,
+          mb: { xs: 1, sm: 2 },
+          flexWrap: "wrap",
+          gap: 1,
         }}
       >
-        <Typography variant="h6">실시간 요청 흐름</Typography>
+        <Typography variant={isMobile ? "subtitle1" : "h6"}>실시간 요청 흐름</Typography>
         <FormControlLabel
           control={
             <Switch
               checked={useDummyLogs}
               onChange={(e) => handleToggleDummyLogs(e.target.checked)}
               color="primary"
+              size={isMobile ? "small" : "medium"}
             />
           }
-          label="더미 로그 생성"
+          label={<Typography variant={isMobile ? "caption" : "body2"}>더미 로그</Typography>}
         />
       </Box>
 
@@ -708,11 +712,11 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
         <Typography
           sx={{
             position: "absolute",
-            left: 40,
+            left: isMobile ? 20 : 40,
             top: HEIGHT / 2,
             transform: "translate(-50%, -50%)",
             color: "rgba(255,255,255,0.9)",
-            fontSize: 14,
+            fontSize: isMobile ? 11 : 14,
             fontWeight: 600,
             pointerEvents: "none",
             userSelect: "none",
@@ -727,22 +731,22 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
             top: HEIGHT / 2,
             transform: "translate(-50%, -50%)",
             color: "rgba(255,255,255,0.9)",
-            fontSize: 14,
+            fontSize: isMobile ? 11 : 14,
             fontWeight: 600,
             pointerEvents: "none",
             userSelect: "none",
           }}
         >
-          Processing
+          {isMobile ? "Proc" : "Processing"}
         </Typography>
         <Typography
           sx={{
             position: "absolute",
-            right: 0,
+            right: isMobile ? 10 : 0,
             top: HEIGHT / 2,
             transform: "translate(-50%, -50%)",
             color: "rgba(255,255,255,0.9)",
-            fontSize: 14,
+            fontSize: isMobile ? 11 : 14,
             fontWeight: 600,
             pointerEvents: "none",
             userSelect: "none",
@@ -759,51 +763,53 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: 0.5,
         }}
       >
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? "0.65rem" : "0.75rem" }}>
           활성 요청: {particleCount}
         </Typography>
 
         {/* 범례 */}
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{ display: "flex", gap: { xs: 1, sm: 2 }, flexWrap: "wrap" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Box
               sx={{
-                width: 12,
-                height: 12,
+                width: isMobile ? 8 : 12,
+                height: isMobile ? 8 : 12,
                 borderRadius: "50%",
                 backgroundColor: "#4caf50",
               }}
             />
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}>
               &lt;100ms
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Box
               sx={{
-                width: 12,
-                height: 12,
+                width: isMobile ? 8 : 12,
+                height: isMobile ? 8 : 12,
                 borderRadius: "50%",
                 backgroundColor: "#ffc107",
               }}
             />
-            <Typography variant="caption" color="text.secondary">
-              200-500ms
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}>
+              {isMobile ? "200-500" : "200-500ms"}
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Box
               sx={{
-                width: 12,
-                height: 12,
+                width: isMobile ? 8 : 12,
+                height: isMobile ? 8 : 12,
                 borderRadius: "50%",
                 backgroundColor: "#f44336",
               }}
             />
-            <Typography variant="caption" color="text.secondary">
-              &gt;1s / Error
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? "0.6rem" : "0.75rem" }}>
+              {isMobile ? ">1s/Err" : ">1s / Error"}
             </Typography>
           </Box>
         </Box>

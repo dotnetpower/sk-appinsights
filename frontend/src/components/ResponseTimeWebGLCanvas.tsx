@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Application, Graphics } from "pixi.js";
 import type { ScatterDataPoint } from "./LiveTrafficChart";
 
@@ -20,7 +20,12 @@ interface ResponseTimeWebGLCanvasProps {
   rangeMs?: number;
 }
 
-const DEFAULT_PADDING = { top: 16, right: 16, bottom: 32, left: 68 };
+const getPadding = (containerWidth: number) => {
+  if (containerWidth < 400) {
+    return { top: 12, right: 8, bottom: 28, left: 48 };
+  }
+  return { top: 16, right: 16, bottom: 32, left: 68 };
+};
 
 const colorFromStatusCode = (statusCode: number): number => {
   if (statusCode >= 500) return 0xff3535; // red
@@ -32,11 +37,11 @@ const colorFromStatusCode = (statusCode: number): number => {
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
-const formatTimestamp = (timestamp: number) =>
+const formatTimestamp = (timestamp: number, compact = false) =>
   new Date(timestamp).toLocaleTimeString("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
+    second: compact ? undefined : "2-digit",
   });
 
 const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
@@ -60,6 +65,8 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
     y: [],
   });
   const [hoverState, setHoverState] = useState<HoverState | null>(null);
+  const theme = useTheme();
+  const isMobileView = useMediaQuery(theme.breakpoints.down("sm"));
 
   const updateScene = useCallback(
     (points: ScatterDataPoint[]) => {
@@ -74,7 +81,8 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
 
       const container = containerRef.current;
       const width = container.clientWidth;
-      const padding = DEFAULT_PADDING;
+      const isMobileView = width < 400;
+      const padding = getPadding(width);
       const plotWidth = Math.max(1, width - padding.left - padding.right);
       const plotHeight = Math.max(1, height - padding.top - padding.bottom);
       const now = Date.now();
@@ -89,7 +97,7 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
 
       const gridLayer = gridLayerRef.current;
       gridLayer.clear();
-      const horizontalSteps = 4;
+      const horizontalSteps = isMobileView ? 3 : 4;
       for (let i = 1; i <= horizontalSteps; i += 1) {
         const ratio = i / horizontalSteps;
         const y = padding.top + plotHeight * (1 - ratio);
@@ -129,17 +137,19 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
 
       projectedPointsRef.current = projected;
 
-      const nextXTicks: AxisTick[] = Array.from({ length: 4 }, (_, index) => {
-        const ratio = index / 3;
+      const tickCount = isMobileView ? 3 : 4;
+      const nextXTicks: AxisTick[] = Array.from({ length: tickCount }, (_, index) => {
+        const ratio = index / (tickCount - 1);
         const ts = domainMin + ratio * domainRange;
         return {
-          label: formatTimestamp(ts),
+          label: formatTimestamp(ts, isMobileView),
           position: padding.left + plotWidth * ratio,
         };
       });
 
-      const nextYTicks: AxisTick[] = Array.from({ length: 5 }, (_, index) => {
-        const ratio = index / 4;
+      const yTickCount = isMobileView ? 4 : 5;
+      const nextYTicks: AxisTick[] = Array.from({ length: yTickCount }, (_, index) => {
+        const ratio = index / (yTickCount - 1);
         const durationValue = Math.round(maxDuration * (1 - ratio));
         return {
           label: `${durationValue}ms`,
@@ -305,11 +315,13 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
           variant="caption"
           sx={{
             position: "absolute",
-            bottom: 4,
+            bottom: 2,
             left: tick.position,
             transform: "translateX(-50%)",
             color: "#90a4c3",
             pointerEvents: "none",
+            fontSize: isMobileView ? "0.6rem" : "0.75rem",
+            whiteSpace: "nowrap",
           }}
         >
           {tick.label}
@@ -322,10 +334,11 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
           variant="caption"
           sx={{
             position: "absolute",
-            left: 8,
-            top: tick.position - 8,
+            left: 4,
+            top: tick.position - 6,
             color: "#90a4c3",
             pointerEvents: "none",
+            fontSize: isMobileView ? "0.55rem" : "0.75rem",
           }}
         >
           {tick.label}
@@ -336,14 +349,15 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
         <Box
           sx={{
             position: "absolute",
-            left: hoverState.pointerX,
+            left: isMobileView ? "50%" : hoverState.pointerX,
             top: Math.max(10, hoverState.pointerY - 20),
             transform: "translate(-50%, -100%)",
             backgroundColor: "rgba(20, 30, 48, 0.98)",
             border: "1px solid rgba(100, 149, 237, 0.4)",
-            borderRadius: 2,
-            p: 1.5,
-            minWidth: 200,
+            borderRadius: isMobileView ? 1 : 2,
+            p: isMobileView ? 1 : 1.5,
+            minWidth: isMobileView ? 160 : 200,
+            maxWidth: isMobileView ? "90%" : "none",
             pointerEvents: "none",
             boxShadow:
               "0 4px 12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)",
@@ -357,9 +371,10 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
               fontWeight: 600,
               display: "block",
               mb: 0.5,
+              fontSize: isMobileView ? "0.65rem" : "0.75rem",
             }}
           >
-            🕐 시간: {hoverState.point.timeStr}
+            🕐 {hoverState.point.timeStr}
           </Typography>
           <Typography
             variant="caption"
@@ -368,9 +383,10 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
               display: "block",
               fontWeight: 600,
               mb: 0.5,
+              fontSize: isMobileView ? "0.65rem" : "0.75rem",
             }}
           >
-            ⚡ 응답시간: {Math.round(hoverState.point.duration)}ms
+            ⚡ {Math.round(hoverState.point.duration)}ms
           </Typography>
           <Typography
             variant="caption"
@@ -379,9 +395,14 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
               display: "block",
               mb: 0.5,
               wordBreak: "break-all",
+              fontSize: isMobileView ? "0.6rem" : "0.75rem",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: isMobileView ? "nowrap" : "normal",
+              maxWidth: isMobileView ? "140px" : "none",
             }}
           >
-            🔗 URL: {hoverState.point.url}
+            🔗 {hoverState.point.url}
           </Typography>
           <Typography
             variant="caption"
@@ -389,9 +410,10 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
               color: hoverState.point.statusCode >= 400 ? "#ff6b6b" : "#66bb6a",
               display: "block",
               fontWeight: 600,
+              fontSize: isMobileView ? "0.65rem" : "0.75rem",
             }}
           >
-            📊 상태: {hoverState.point.statusCode}
+            📊 {hoverState.point.statusCode}
           </Typography>
         </Box>
       )}
@@ -405,6 +427,9 @@ const ResponseTimeWebGLCanvas: React.FC<ResponseTimeWebGLCanvasProps> = ({
             left: "50%",
             transform: "translate(-50%, -50%)",
             color: "#90a4c3",
+            fontSize: isMobileView ? "0.8rem" : "0.875rem",
+            textAlign: "center",
+            px: 2,
           }}
         >
           실시간 데이터를 수집하는 중입니다...
