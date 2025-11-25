@@ -136,3 +136,17 @@ class TracingMiddleware(BaseHTTPMiddleware):
                     f"⚡ {request.method} {request.url.path} | "
                     f"Status: {status} | Duration: {duration_ms}ms"
                 )
+                
+                # Live Metrics에 실시간 트래픽 전송
+                try:
+                    from ..api.live_metrics import manager
+                    log_data = {
+                        'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(start_time)),
+                        'method': request.method,
+                        'path': request.url.path,
+                        'status_code': status,
+                        'duration': duration_ms,
+                    }
+                    manager.add_request_log(log_data)
+                except Exception as e:
+                    logger.debug(f"Failed to send to Live Metrics: {e}")

@@ -177,21 +177,24 @@ def parse_container_log(log_line: str) -> Dict[str, Any] | None:
 async def stream_container_logs():
     """
     Container App 실시간 로그 스트리밍
+    Production 환경에서는 미들웨어가 실제 트래픽을 전송하므로 더미 로그 불필요
     """
     import os
     import shutil
+
+    # 토글 상태 확인: False면 더미 로그 생성 안 함
+    if not manager.use_dummy_logs:
+        logger.info("✅ 실제 트래픽 모드: 미들웨어에서 HTTP 요청을 Live Metrics에 전송합니다.")
+        # 무한 대기 (더미 로그 생성 안 함)
+        while True:
+            await asyncio.sleep(60)
+        return
+    
+    # 더미 로그 모드
+    logger.warning(f"🎲 더미 로그 모드 활성화 (environment={settings.environment})")
     
     container_app_name = os.getenv("CONTAINER_APP_NAME", "ca-sk-appinsights")
     resource_group = os.getenv("RESOURCE_GROUP", "rg-sk-appinsights")
-    
-    # 환경 체크: production이 아니면 더미 로그 사용
-    is_production = settings.environment.lower() == "production"
-    use_dummy_logs = manager.use_dummy_logs  # 토글 상태 확인
-    
-    if not is_production or use_dummy_logs:
-        logger.warning(f"더미 로그 모드: environment={settings.environment}, use_dummy_logs={use_dummy_logs}")
-        await stream_dummy_logs()
-        return
     
     # Azure CLI 설치 확인
     if not shutil.which("az"):
@@ -443,6 +446,8 @@ async def startup_event():
     """앱 시작 시 로그 스트리밍 시작"""
     logger.info("🎯 Live Metrics 서비스 시작")
     # 환경에 따라 초기 토글 상태 설정
+    # production에서는 실제 트래픽만 사용 (더미 로그 비활성화)
     manager.use_dummy_logs = settings.environment.lower() != "production"
     logger.info(f"초기 더미 로그 상태: {manager.use_dummy_logs} (environment: {settings.environment})")
+    logger.info("✅ Production: 실제 HTTP 트래픽이 미들웨어를 통해 Live Metrics에 전송됩니다.")
     # WebSocket 연결 시 시작되도록 변경 (startup에서는 시작하지 않음)
