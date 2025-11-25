@@ -21,6 +21,7 @@ import {
   Divider,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import GitHubIcon from "@mui/icons-material/GitHub";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
@@ -293,6 +294,16 @@ function App() {
             >
               v{buildInfo.version} | #{buildInfo.buildNumber}
             </Typography>
+            <IconButton
+              color="inherit"
+              aria-label="GitHub 저장소 보기"
+              href="https://github.com/dotnetpower/sk-appinsights"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ ml: 1 }}
+            >
+              <GitHubIcon />
+            </IconButton>
           </Toolbar>
           {!isMobile && (
             <Tabs
