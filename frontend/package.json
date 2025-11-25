@@ -28,7 +28,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "REACT_APP_VERSION=$(node -p \"require('./package.json').version\") REACT_APP_GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo 'dev') REACT_APP_BUILD_TIME=$(date -u +\"%Y-%m-%dT%H:%M:%SZ\") react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

@@ -39,6 +39,7 @@ class ConnectionManager:
         self.current_minute_requests: List[Dict[str, Any]] = []
         self.last_reset = datetime.utcnow()
         self._loop = None
+        self.use_dummy_logs = True  # 기본값: 더미 로그 사용
     
     def set_event_loop(self, loop):
         """이벤트 루프 설정"""
@@ -183,10 +184,12 @@ async def stream_container_logs():
     container_app_name = os.getenv("CONTAINER_APP_NAME", "ca-sk-appinsights")
     resource_group = os.getenv("RESOURCE_GROUP", "rg-sk-appinsights")
     
-    # 로컬 개발 모드 체크
-    use_dummy_logs = os.getenv("USE_DUMMY_LOGS", "true").lower() == "true"
-    if use_dummy_logs:
-        logger.warning("로컬 개발 모드: 더미 로그 사용 (USE_DUMMY_LOGS=true)")
+    # 환경 체크: production이 아니면 더미 로그 사용
+    is_production = settings.environment.lower() == "production"
+    use_dummy_logs = manager.use_dummy_logs  # 토글 상태 확인
+    
+    if not is_production or use_dummy_logs:
+        logger.warning(f"더미 로그 모드: environment={settings.environment}, use_dummy_logs={use_dummy_logs}")
         await stream_dummy_logs()
         return
     
@@ -252,6 +255,11 @@ async def stream_dummy_logs():
     
     while True:
         try:
+            # 토글이 꺼지면 종료
+            if not manager.use_dummy_logs:
+                logger.info("🛑 더미 로그 생성 중단 (토글 비활성화)")
+                break
+            
             # 초당 1-3개의 더미 요청 생성 (CPU 절약)
             num_requests = random.randint(1, 3)
             logger.info(f"🔄 {num_requests}개 더미 요청 생성 중...")
@@ -391,8 +399,50 @@ async def get_metrics_history(minutes: int = 60):
     return {"history": history}
 
 
+@router.post("/toggle-dummy-logs")
+async def toggle_dummy_logs(enabled: bool):
+    """
+    더미 로그 생성 토글
+    
+    - **enabled**: True이면 더미 로그 사용, False면 실제 데이터 사용
+    """
+    manager.use_dummy_logs = enabled
+    
+    # 로그 스트리밍 재시작이 필요한 경우
+    global log_streaming_task, log_streaming_started
+    if log_streaming_task and not log_streaming_task.done():
+        log_streaming_task.cancel()
+        log_streaming_started = False
+    
+    # 활성화된 경우 새로운 스트리밍 시작
+    if enabled:
+        await start_log_streaming()
+    
+    return {
+        "success": True,
+        "use_dummy_logs": manager.use_dummy_logs,
+        "environment": settings.environment,
+        "message": f"더미 로그 모드: {'활성화' if enabled else '비활성화'}"
+    }
+
+
+@router.get("/dummy-logs-status")
+async def get_dummy_logs_status():
+    """
+    더미 로그 생성 상태 조회
+    """
+    return {
+        "use_dummy_logs": manager.use_dummy_logs,
+        "environment": settings.environment,
+        "is_production": settings.environment.lower() == "production"
+    }
+
+
 @router.on_event("startup")
 async def startup_event():
     """앱 시작 시 로그 스트리밍 시작"""
     logger.info("🎯 Live Metrics 서비스 시작")
+    # 환경에 따라 초기 토글 상태 설정
+    manager.use_dummy_logs = settings.environment.lower() != "production"
+    logger.info(f"초기 더미 로그 상태: {manager.use_dummy_logs} (environment: {settings.environment})")
     # WebSocket 연결 시 시작되도록 변경 (startup에서는 시작하지 않음)

@@ -10,6 +10,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import RequestFlowChartThree from "./RequestFlowChartThree";
+import ResponseTimeWebGLCanvas from "./ResponseTimeWebGLCanvas";
 import {
   LineChart,
   Line,
@@ -50,11 +51,37 @@ interface RequestEvent {
   timestamp: string;
 }
 
+export interface ScatterDataPoint {
+  time: number; // timestamp in ms
+  timeStr: string; // formatted time string
+  duration: number;
+  url: string;
+  statusCode: number;
+}
+
+const parseServerTimestamp = (value?: string) => {
+  if (!value) {
+    return new Date();
+  }
+
+  const trimmed = value.trim();
+  const hasTimezone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed);
+  const normalized = hasTimezone ? trimmed : `${trimmed}Z`;
+  const parsed = new Date(normalized);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date(trimmed);
+  }
+
+  return parsed;
+};
+
 const LiveTrafficChart: React.FC = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [currentMetrics, setCurrentMetrics] = useState<MetricData | null>(null);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [latestRequest, setLatestRequest] = useState<RequestEvent | null>(null);
+  const [scatterData, setScatterData] = useState<ScatterDataPoint[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const maxDataPoints = 60; // 최근 60초 데이터만 유지
 
@@ -66,21 +93,57 @@ const LiveTrafficChart: React.FC = () => {
           ? `wss://${window.location.host}/api/live-metrics/ws/traffic`
           : "ws://localhost:8000/api/live-metrics/ws/traffic";
 
+      console.log("🔌 WebSocket 연결 시도:", wsUrl);
+      console.log("NODE_ENV:", process.env.NODE_ENV);
+
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log("✅ WebSocket 연결됨");
+        console.log("✅ WebSocket 연결 성공!");
         setIsConnected(true);
       };
 
       ws.onmessage = (event) => {
+        //console.log("📨 Raw WebSocket 데이터:", event.data);
         try {
           const message = JSON.parse(event.data);
+          //console.log("📨 WebSocket 메시지 수신:", message);
 
           // 개별 요청 이벤트
           if (message.type === "new_request") {
-            setLatestRequest(message.data);
+            const reqData: RequestEvent = message.data;
+            //console.log("🆕 새로운 요청 데이터:", reqData);
+            setLatestRequest(reqData);
+
+            // 분산형 차트 데이터 추가
+            const timestamp = parseServerTimestamp(reqData.timestamp);
+            const timeStr = timestamp.toLocaleTimeString("ko-KR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            });
+
+            const newPoint = {
+              time: timestamp.getTime(),
+              timeStr: timeStr,
+              duration: reqData.duration,
+              url: reqData.path,
+              statusCode: reqData.status_code,
+            };
+            console.log("📊 차트에 추가할 포인트:", newPoint);
+
+            setScatterData((prevData) => {
+              const newData = [...prevData, newPoint];
+
+              // 최근 2분(120초) 데이터만 유지
+              const twoMinutesAgo = Date.now() - 120000;
+              const filtered = newData.filter(
+                (item) => item.time >= twoMinutesAgo
+              );
+              //console.log("✅ 필터링 후 데이터 개수:", filtered.length);
+              return filtered;
+            });
           }
           // 집계 메트릭
           else if (message.type === "traffic_update") {
@@ -88,7 +151,7 @@ const LiveTrafficChart: React.FC = () => {
             setCurrentMetrics(metrics);
 
             // 차트 데이터 업데이트
-            const timestamp = new Date(metrics.timestamp);
+            const timestamp = parseServerTimestamp(metrics.timestamp);
             const timeString = timestamp.toLocaleTimeString("ko-KR", {
               hour: "2-digit",
               minute: "2-digit",
@@ -160,7 +223,7 @@ const LiveTrafficChart: React.FC = () => {
 
         if (data.history && data.history.length > 0) {
           const formattedData = data.history.map((item: MetricData) => {
-            const timestamp = new Date(item.timestamp);
+            const timestamp = parseServerTimestamp(item.timestamp);
             return {
               time: timestamp.toLocaleTimeString("ko-KR", {
                 hour: "2-digit",
@@ -204,20 +267,18 @@ const LiveTrafficChart: React.FC = () => {
           }
         />
       </Box>
-
-      {/* 실시간 요청 흐름 */}
-      <RequestFlowChartThree latestRequest={latestRequest} />
-
       {/* 현재 메트릭 카드 */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <TrendingUpIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">요청 수</Typography>
+                <TrendingUpIcon color="primary" sx={{ mr: 1, fontSize: 20 }} />
+                <Typography variant="subtitle1" fontWeight={600}>
+                  요청 수
+                </Typography>
               </Box>
-              <Typography variant="h3">
+              <Typography variant="h4">
                 {currentMetrics?.request_count || 0}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -231,10 +292,12 @@ const LiveTrafficChart: React.FC = () => {
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <SpeedIcon color="info" sx={{ mr: 1 }} />
-                <Typography variant="h6">평균 응답시간</Typography>
+                <SpeedIcon color="info" sx={{ mr: 1, fontSize: 20 }} />
+                <Typography variant="subtitle1" fontWeight={600}>
+                  평균 응답시간
+                </Typography>
               </Box>
-              <Typography variant="h3">
+              <Typography variant="h4">
                 {currentMetrics?.avg_duration
                   ? Math.round(currentMetrics.avg_duration)
                   : 0}
@@ -251,10 +314,12 @@ const LiveTrafficChart: React.FC = () => {
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <ErrorIcon color="error" sx={{ mr: 1 }} />
-                <Typography variant="h6">에러 수</Typography>
+                <ErrorIcon color="error" sx={{ mr: 1, fontSize: 20 }} />
+                <Typography variant="subtitle1" fontWeight={600}>
+                  에러 수
+                </Typography>
               </Box>
-              <Typography variant="h3">
+              <Typography variant="h4">
                 {currentMetrics?.error_count || 0}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -274,11 +339,13 @@ const LiveTrafficChart: React.FC = () => {
                       ? getStatusColor(currentMetrics.success_rate)
                       : "success"
                   }
-                  sx={{ mr: 1 }}
+                  sx={{ mr: 1, fontSize: 20 }}
                 />
-                <Typography variant="h6">성공률</Typography>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  성공률
+                </Typography>
               </Box>
-              <Typography variant="h3">
+              <Typography variant="h4">
                 {currentMetrics?.success_rate
                   ? currentMetrics.success_rate.toFixed(1)
                   : 100}
@@ -291,6 +358,24 @@ const LiveTrafficChart: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* 실시간 요청 흐름 */}
+      <RequestFlowChartThree latestRequest={latestRequest} />
+
+      {/* 분산형 차트 - 응답시간 분포 */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          응답시간 분포
+          <Typography component="span" variant="caption" sx={{ ml: 1 }}>
+            데이터 {scatterData.length}건
+          </Typography>
+        </Typography>
+        <ResponseTimeWebGLCanvas
+          data={scatterData}
+          height={280}
+          rangeMs={120000}
+        />
+      </Paper>
 
       {/* 실시간 트래픽 그래프 */}
       <Paper sx={{ p: 3, mb: 3 }}>

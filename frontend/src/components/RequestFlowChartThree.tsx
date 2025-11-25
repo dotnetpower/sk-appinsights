@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, Paper, Typography } from "@mui/material";
+import {
+  Box,
+  Paper,
+  Typography,
+  Switch,
+  FormControlLabel,
+} from "@mui/material";
 import * as THREE from "three";
 
 interface ParticleData {
@@ -155,6 +161,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
   latestRequest,
 }) => {
   const [particleCount, setParticleCount] = useState(0);
+  const [useDummyLogs, setUseDummyLogs] = useState(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const pointsRef = useRef<THREE.Points | null>(null);
@@ -164,12 +171,59 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
   const simulationTimeRef = useRef<number>(0);
   const lastParticleCountRef = useRef(0);
   const lastCountUpdateRef = useRef(0);
-  const currentStatusCodeRef = useRef<number | null>(null);
 
   const MAX_PARTICLES = 50;
   const WIDTH = 1200;
-  const HEIGHT = 250;
-  const COUNT_UPDATE_INTERVAL = 250; // ms 간격으로만 UI 업데이트
+  const HEIGHT = 200;
+  const COUNT_UPDATE_INTERVAL = 200; // ms 간격으로만 UI 업데이트
+
+  // 더미 로그 상태 초기화
+  useEffect(() => {
+    const fetchDummyLogsStatus = async () => {
+      try {
+        const API_BASE_URL =
+          process.env.REACT_APP_API_URL !== undefined
+            ? process.env.REACT_APP_API_URL
+            : process.env.NODE_ENV === "production"
+            ? ""
+            : "http://localhost:8000";
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/live-metrics/dummy-logs-status`
+        );
+        const data = await response.json();
+        setUseDummyLogs(data.use_dummy_logs);
+      } catch (error) {
+        console.error("더미 로그 상태 조회 실패:", error);
+      }
+    };
+
+    fetchDummyLogsStatus();
+  }, []);
+
+  // 더미 로그 토글 함수
+  const handleToggleDummyLogs = async (checked: boolean) => {
+    try {
+      const API_BASE_URL =
+        process.env.REACT_APP_API_URL !== undefined
+          ? process.env.REACT_APP_API_URL
+          : process.env.NODE_ENV === "production"
+          ? ""
+          : "http://localhost:8000";
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/live-metrics/toggle-dummy-logs?enabled=${checked}`,
+        { method: "POST" }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setUseDummyLogs(checked);
+        console.log("✅ 더미 로그 토글:", data.message);
+      }
+    } catch (error) {
+      console.error("❌ 더미 로그 토글 실패:", error);
+    }
+  };
 
   const getStatusColor = (
     statusCode: number,
@@ -199,7 +253,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
 
     // Scene 설정
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a1929);
+    scene.background = new THREE.Color(0x1a2332);
     sceneRef.current = scene;
 
     // Camera 설정 - 확장된 2D (음수 X 포함)
@@ -251,22 +305,22 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
 
     // 배경 요소
     const POSITIONS = {
-      IN_X: 40,
+      IN_X: -10,
       IN_Y: HEIGHT / 2,
       PIPE_X: containerWidth * 0.5,
       PIPE_Y: HEIGHT / 2,
-      OUT_X: containerWidth - 80,
+      OUT_X: containerWidth - 40,
       OUT_Y: HEIGHT / 2,
     };
 
     // 파티클 시작/종료 지점 (화면 밖)
-    const PARTICLE_START_X = -120;
+    const PARTICLE_START_X = -60;
     const PARTICLE_END_X = containerWidth + 10;
 
     // Processing Pipeline Box
     const pipelineGeometry = new THREE.PlaneGeometry(containerWidth * 0.2, 60);
     const pipelineMaterial = new THREE.MeshBasicMaterial({
-      color: 0x1e3a5f,
+      color: 0x2d4a6f,
       side: THREE.DoubleSide,
     });
     const pipelineMesh = new THREE.Mesh(pipelineGeometry, pipelineMaterial);
@@ -276,7 +330,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
     // IN Box
     const inGeometry = new THREE.PlaneGeometry(80, 60);
     const inMaterial = new THREE.MeshBasicMaterial({
-      color: 0x0f3460,
+      color: 0x1f4470,
       side: THREE.DoubleSide,
     });
     const inMesh = new THREE.Mesh(inGeometry, inMaterial);
@@ -286,7 +340,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
     // OUT Box
     const outGeometry = new THREE.PlaneGeometry(80, 60);
     const outMaterial = new THREE.MeshBasicMaterial({
-      color: 0x0f3460,
+      color: 0x1f4470,
       side: THREE.DoubleSide,
     });
     const outMesh = new THREE.Mesh(outGeometry, outMaterial);
@@ -607,9 +661,26 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
 
   return (
     <Paper sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        실시간 요청 흐름
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Typography variant="h6">실시간 요청 흐름</Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={useDummyLogs}
+              onChange={(e) => handleToggleDummyLogs(e.target.checked)}
+              color="primary"
+            />
+          }
+          label="더미 로그 생성"
+        />
+      </Box>
 
       <Box
         sx={{
@@ -637,7 +708,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
         <Typography
           sx={{
             position: "absolute",
-            left: 80,
+            left: 40,
             top: HEIGHT / 2,
             transform: "translate(-50%, -50%)",
             color: "rgba(255,255,255,0.9)",
@@ -667,9 +738,9 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
         <Typography
           sx={{
             position: "absolute",
-            right: 80,
+            right: 0,
             top: HEIGHT / 2,
-            transform: "translate(50%, -50%)",
+            transform: "translate(-50%, -50%)",
             color: "rgba(255,255,255,0.9)",
             fontSize: 14,
             fontWeight: 600,

@@ -108,6 +108,8 @@ jobs:
           
           # 빈 값이 아닌 환경변수만 배열에 추가
           ENV_VARS_ARRAY=()
+          # ENVIRONMENT는 항상 production으로 설정
+          ENV_VARS_ARRAY+=("ENVIRONMENT=production")
           [[ -n "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" ]] && \
             ENV_VARS_ARRAY+=("APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string")
           [[ -n "${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" ]] && \
@@ -187,6 +189,8 @@ jobs:
           
           # 빈 값이 아닌 환경변수만 배열에 추가
           ENV_VARS_ARRAY=()
+          # ENVIRONMENT는 항상 production으로 설정
+          ENV_VARS_ARRAY+=("ENVIRONMENT=production")
           [[ -n "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" ]] && \
             ENV_VARS_ARRAY+=("APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-connection-string")
           [[ -n "${{ secrets.APPLICATIONINSIGHTS_WORKSPACE_ID }}" ]] && \

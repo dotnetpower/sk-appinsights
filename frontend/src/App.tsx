@@ -99,8 +99,14 @@ function App() {
   // 빌드 정보
   const buildInfo = {
     version: process.env.REACT_APP_VERSION || "0.1.0",
-    commit: process.env.REACT_APP_GIT_COMMIT || "dev",
-    buildTime: process.env.REACT_APP_BUILD_TIME || "local",
+    commit: (process.env.REACT_APP_GIT_COMMIT || "dev").substring(0, 7),
+    buildTime: process.env.REACT_APP_BUILD_TIME || new Date().toISOString(),
+    buildNumber: process.env.REACT_APP_BUILD_TIME
+      ? new Date(process.env.REACT_APP_BUILD_TIME)
+          .getTime()
+          .toString()
+          .slice(-6)
+      : Date.now().toString().slice(-6),
   };
 
   // 페이지 이름 매핑
@@ -234,8 +240,8 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static">
-          <Toolbar>
+        <AppBar position="static" sx={{ minHeight: "auto" }}>
+          <Toolbar sx={{ minHeight: "48px !important", py: 0.5 }}>
             {isMobile && (
               <IconButton
                 color="inherit"
@@ -249,52 +255,40 @@ function App() {
                 <MenuIcon />
               </IconButton>
             )}
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography
-                variant={isMobile ? "subtitle1" : "h6"}
-                component="div"
-              >
-                {isMobile
-                  ? "ETF Agent"
-                  : "ETF Agent - 주식 & ETF 분석 대시보드"}
-              </Typography>
-              {isMobile && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    opacity: 0.6,
-                    fontFamily: "monospace",
-                    fontSize: "0.65rem",
-                    display: "block",
-                    lineHeight: 1.2,
-                  }}
-                >
-                  v{buildInfo.version}
-                </Typography>
-              )}
-            </Box>
-            {!isMobile && (
-              <Typography
-                variant="caption"
-                sx={{
-                  opacity: 0.7,
-                  fontFamily: "monospace",
-                  fontSize: "0.75rem",
-                }}
-              >
-                v{buildInfo.version} | {buildInfo.commit} |{" "}
-                {new Date(buildInfo.buildTime).toLocaleString("ko-KR", {
-                  timeZone: "Asia/Seoul",
-                })}
-              </Typography>
-            )}
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{ fontSize: isMobile ? "1rem" : "1.25rem" }}
+            >
+              ETF Agent
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                ml: 2,
+                opacity: 0.7,
+                fontFamily: "monospace",
+                fontSize: isMobile ? "0.65rem" : "0.75rem",
+                flexGrow: 1,
+              }}
+            >
+              v{buildInfo.version} | #{buildInfo.buildNumber}
+            </Typography>
           </Toolbar>
           {!isMobile && (
             <Tabs
               value={tabValue}
               onChange={handleTabChange}
-              variant="standard"
-              centered
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                minHeight: "40px",
+                "& .MuiTab-root": {
+                  minHeight: "40px",
+                  py: 0.5,
+                  fontSize: "0.875rem",
+                },
+              }}
             >
               {menuItems.map((item, index) => (
                 <Tab
