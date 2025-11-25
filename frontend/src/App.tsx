@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import {
   CssBaseline,
@@ -91,7 +92,8 @@ function TabPanel(props: TabPanelProps) {
 }
 
 function App() {
-  const [tabValue, setTabValue] = useState(0);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [userId] = useState(() => getUserId());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -116,50 +118,67 @@ function App() {
       name: "대시보드",
       icon: <DashboardIcon />,
       pageName: "Dashboard",
+      path: "/",
     },
     {
       id: "etf-list",
       name: "ETF 목록",
       icon: <ListAltIcon />,
       pageName: "ETF List",
+      path: "/etf-list",
     },
     {
       id: "stock-detail",
       name: "주식 상세",
       icon: <ShowChartIcon />,
       pageName: "Stock Detail",
+      path: "/stock-detail",
     },
     {
       id: "news-feed",
       name: "뉴스 피드",
       icon: <FeedIcon />,
       pageName: "News Feed",
+      path: "/news-feed",
     },
     {
       id: "ai-chat",
       name: "AI 채팅",
       icon: <ChatIcon />,
       pageName: "AI Chat",
+      path: "/ai-chat",
     },
     {
       id: "heatmap-analysis",
       name: "히트맵 분석",
       icon: <GridOnIcon />,
       pageName: "Heatmap Analysis",
+      path: "/heatmap-analysis",
     },
     {
       id: "app-insights",
       name: "App Insights",
       icon: <InsightsIcon />,
       pageName: "App Insights",
+      path: "/app-insights",
     },
     {
       id: "live-traffic",
       name: "실시간 트래픽",
       icon: <ShowChartIcon />,
       pageName: "Live Traffic",
+      path: "/live-traffic",
     },
   ];
+
+  // URL 기반으로 현재 탭 인덱스 계산
+  const getCurrentTabIndex = () => {
+    const currentPath = location.pathname;
+    const index = menuItems.findIndex(item => item.path === currentPath);
+    return index >= 0 ? index : 0;
+  };
+
+  const tabValue = getCurrentTabIndex();
   const currentPage = menuItems[tabValue].pageName;
 
   // 현재 페이지 추적
@@ -223,7 +242,7 @@ function App() {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     trackTabChange(newValue, "tab_changed");
-    setTabValue(newValue);
+    navigate(menuItems[newValue].path);
   };
 
   const handleDrawerToggle = () => {
@@ -232,7 +251,7 @@ function App() {
 
   const handleMenuItemClick = (index: number) => {
     trackTabChange(index, "menu_item_clicked", { interaction_type: "drawer" });
-    setTabValue(index);
+    navigate(menuItems[index].path);
     setDrawerOpen(false);
   };
 
