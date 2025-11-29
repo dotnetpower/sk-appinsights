@@ -1,16 +1,16 @@
 """
-API 라우터 - AI 에이전트 채팅 엔드포인트
+API 라우터 - AI 에이전트 채팅 엔드포인트 (v1)
 """
-from typing import Any, Dict
+from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from ..agent.agent_service import get_agent_service
-from ..observability.utils import trace_span
+from src.agent.agent_service import get_agent_service
+from src.observability.utils import trace_span
 
-router = APIRouter(prefix="/api/chat", tags=["Chat"])
+router = APIRouter(prefix="/api/v1/chat", tags=["Chat"])
 
 
 class ChatRequest(BaseModel):
@@ -24,7 +24,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/", response_model=ChatResponse)
-@trace_span(name="api.chat.chat", attributes={"endpoint": "/api/chat/", "method": "POST"})
+@trace_span(name="api.v1.chat.chat", attributes={"endpoint": "/api/v1/chat/", "method": "POST"})
 async def chat(request: ChatRequest) -> ChatResponse:
     """AI 에이전트와 채팅 (비스트리밍)"""
     try:
@@ -36,7 +36,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
 
 @router.post("/stream")
-@trace_span(name="api.chat.chat_stream", attributes={"endpoint": "/api/chat/stream", "method": "POST"})
+@trace_span(name="api.v1.chat.chat_stream", attributes={"endpoint": "/api/v1/chat/stream", "method": "POST"})
 async def chat_stream(request: ChatRequest):
     """AI 에이전트와 채팅 (스트리밍)"""
     try:

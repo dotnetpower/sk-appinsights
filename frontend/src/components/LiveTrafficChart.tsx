@@ -94,8 +94,8 @@ const LiveTrafficChart: React.FC = () => {
     const connectWebSocket = () => {
       const wsUrl =
         process.env.NODE_ENV === "production"
-          ? `wss://${window.location.host}/api/live-metrics/ws/traffic`
-          : "ws://localhost:8000/api/live-metrics/ws/traffic";
+          ? `wss://${window.location.host}/api/v1/live-metrics/ws/traffic`
+          : "ws://localhost:8000/api/v1/live-metrics/ws/traffic";
 
       console.log("🔌 WebSocket 연결 시도:", wsUrl);
       console.log("NODE_ENV:", process.env.NODE_ENV);
@@ -221,7 +221,7 @@ const LiveTrafficChart: React.FC = () => {
             : "http://localhost:8000";
 
         const response = await fetch(
-          `${API_BASE_URL}/api/live-metrics/history?minutes=5`
+          `${API_BASE_URL}/api/v1/live-metrics/history?minutes=5`
         );
         const data = await response.json();
 

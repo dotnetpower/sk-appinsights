@@ -1,5 +1,5 @@
 """
-사용자 행동 분석 API
+사용자 행동 분석 API (v1)
 """
 from datetime import datetime
 from typing import Optional
@@ -7,9 +7,9 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ..observability.telemetry import track_page_view, track_user_event
+from src.observability.telemetry import track_page_view, track_user_event
 
-router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 
 
 class PageViewEvent(BaseModel):

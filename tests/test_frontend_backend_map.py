@@ -62,9 +62,9 @@ async def test_frontend_backend_connection():
     
     # 3. 여러 API 엔드포인트 호출
     endpoints = [
-        ("/api/etf/list?limit=5", "ETF 목록 조회"),
-        ("/api/news/market?category=general&limit=5", "뉴스 조회"),
-        ("/api/stocks/search?q=AAPL", "주식 검색"),
+        ("/api/v1/etf/list?limit=5", "ETF 목록 조회"),
+        ("/api/v1/news/market?category=general&limit=5", "뉴스 조회"),
+        ("/api/v1/stocks/search?q=AAPL", "주식 검색"),
     ]
     
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -123,7 +123,7 @@ async def test_frontend_backend_connection():
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
-                f"{backend_url}/api/chat/",
+                f"{backend_url}/api/v1/chat/",
                 json={"message": "AAPL 주식에 대해 알려줘"},
                 headers=chat_headers
             )

@@ -190,7 +190,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
             : "http://localhost:8000";
 
         const response = await fetch(
-          `${API_BASE_URL}/api/live-metrics/dummy-logs-status`
+          `${API_BASE_URL}/api/v1/live-metrics/dummy-logs-status`
         );
         const data = await response.json();
         setUseDummyLogs(data.use_dummy_logs);
@@ -213,7 +213,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
           : "http://localhost:8000";
 
       const response = await fetch(
-        `${API_BASE_URL}/api/live-metrics/toggle-dummy-logs?enabled=${checked}`,
+        `${API_BASE_URL}/api/v1/live-metrics/toggle-dummy-logs?enabled=${checked}`,
         { method: "POST" }
       );
       const data = await response.json();

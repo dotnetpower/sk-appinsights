@@ -1,5 +1,5 @@
 """
-API 라우터 - 주식 관련 엔드포인트
+API 라우터 - 주식 관련 엔드포인트 (v1)
 """
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -8,21 +8,19 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ..services import get_cosmos_service, get_yfinance_client
-from ..observability.utils import trace_span
+from src.observability.utils import trace_span
+from src.services import get_cosmos_service, get_yfinance_client
 
-router = APIRouter(prefix="/api/stocks", tags=["Stocks"])
+router = APIRouter(prefix="/api/v1/stocks", tags=["Stocks"])
 
-# 간단한 메모리 캐시 (60초 TTL)
 _quote_cache: Dict[str, Dict[str, Any]] = {}
-_cache_ttl = 60  # 60초
+_cache_ttl = 60
 
-# ThreadPoolExecutor for parallel processing
 _executor = ThreadPoolExecutor(max_workers=10)
 
 
 @router.get("/search")
-@trace_span(name="api.stocks.search_stocks", attributes={"endpoint": "/api/stocks/search"})
+@trace_span(name="api.v1.stocks.search_stocks", attributes={"endpoint": "/api/v1/stocks/search"})
 async def search_stocks(q: str = Query(..., min_length=1)) -> Dict[str, Any]:
     """주식 심볼 검색"""
     yfinance = get_yfinance_client()
@@ -41,7 +39,6 @@ async def get_multiple_quotes(symbols: str = Query(..., description="콤마로 �
     results = {}
     symbols_to_fetch = []
     
-    # 1단계: 캐시 확인
     for symbol in symbol_list:
         cache_key = symbol
         if cache_key in _quote_cache:
@@ -52,7 +49,6 @@ async def get_multiple_quotes(symbols: str = Query(..., description="콤마로 �
                 continue
         symbols_to_fetch.append(symbol)
     
-    # 2단계: 캐시 미스된 심볼들을 병렬로 조회
     if symbols_to_fetch:
         def fetch_quote(symbol: str):
             try:
@@ -68,7 +64,6 @@ async def get_multiple_quotes(symbols: str = Query(..., description="콤마로 �
                 return {"symbol": symbol, "error": str(e)}
             return {"symbol": symbol, "error": "No data"}
         
-        # 병렬 실행 (최대 3초 타임아웃)
         loop = asyncio.get_event_loop()
         try:
             tasks = [
@@ -97,19 +92,17 @@ async def get_multiple_quotes(symbols: str = Query(..., description="콤마로 �
 
 
 @router.get("/{symbol}")
-@trace_span(name="api.stocks.get_stock_detail", attributes={"endpoint": "/api/stocks/{symbol}"})
+@trace_span(name="api.v1.stocks.get_stock_detail", attributes={"endpoint": "/api/v1/stocks/{symbol}"})
 async def get_stock_detail(symbol: str) -> Dict[str, Any]:
     """주식 상세 정보 조회"""
     yfinance = get_yfinance_client()
     
-    # quoteType으로 ETF 판단
     import yfinance as yf
     ticker = yf.Ticker(symbol.upper())
     info = ticker.info
     quote_type = info.get("quoteType", "")
     is_etf = quote_type == "ETF"
     
-    # ETF이면 ETF 프로필, 아니면 회사 프로필
     if is_etf:
         profile = yfinance.get_etf_profile(symbol.upper())
     else:
@@ -120,7 +113,6 @@ async def get_stock_detail(symbol: str) -> Dict[str, Any]:
     if not profile and not quote:
         raise HTTPException(status_code=404, detail=f"Stock {symbol} not found")
     
-    # Cosmos DB에 저장
     cosmos = get_cosmos_service()
     data = {
         "profile": profile,
@@ -128,9 +120,7 @@ async def get_stock_detail(symbol: str) -> Dict[str, Any]:
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    # ETF인 경우 ETF로 저장, 아니면 주식으로 저장
     if is_etf:
-        # ETF 보유 종목도 함께 저장 (만약 있다면)
         try:
             holdings = yfinance.get_etf_holdings(symbol.upper())
             if holdings:
@@ -156,14 +146,12 @@ async def get_stock_quote(symbol: str) -> Dict[str, Any]:
     symbol = symbol.upper()
     now = datetime.now(timezone.utc)
     
-    # 캐시 확인
     if symbol in _quote_cache:
         cached = _quote_cache[symbol]
         cache_time = datetime.fromisoformat(cached["timestamp"])
         if (now - cache_time).total_seconds() < _cache_ttl:
             return cached
     
-    # 캐시 미스 - 데이터 조회
     yfinance = get_yfinance_client()
     quote = yfinance.get_quote(symbol)
     
@@ -224,4 +212,3 @@ async def get_stock_candles(
         "resolution": resolution,
         "data": candles
     }
-

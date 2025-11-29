@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 
-from .api import analytics, chat, etf, insights, live_metrics, news, stocks
+from .api.v1 import analytics, chat, etf, insights, live_metrics, news, stocks
 from .observability import (TracingMiddleware, initialize_metrics,
                             setup_telemetry)
 

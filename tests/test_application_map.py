@@ -176,19 +176,19 @@ class ApplicationMapTester:
         # 2. 테스트 케이스 정의
         test_cases = [
             # ETF API 테스트
-            ("/api/etf/list?limit=5", "ETF 목록 조회", "GET", None),
+            ("/api/v1/etf/list?limit=5", "ETF 목록 조회", "GET", None),
             
             # 뉴스 API 테스트
-            ("/api/news/market?category=general&limit=5", "시장 뉴스 조회", "GET", None),
-            ("/api/news/global?sources=all&limit=5", "글로벌 뉴스 조회", "GET", None),
+            ("/api/v1/news/market?category=general&limit=5", "시장 뉴스 조회", "GET", None),
+            ("/api/v1/news/global?sources=all&limit=5", "글로벌 뉴스 조회", "GET", None),
             
             # 주식 API 테스트
-            ("/api/stocks/search?q=AAPL", "주식 검색 (AAPL)", "GET", None),
-            ("/api/stocks/search?q=MSFT", "주식 검색 (MSFT)", "GET", None),
+            ("/api/v1/stocks/search?q=AAPL", "주식 검색 (AAPL)", "GET", None),
+            ("/api/v1/stocks/search?q=MSFT", "주식 검색 (MSFT)", "GET", None),
             
             # 채팅 API 테스트 (Semantic Kernel + Cosmos DB + External APIs)
-            ("/api/chat/", "AI 채팅 - AAPL 분석", "POST", {"message": "AAPL 주식에 대해 알려줘"}),
-            ("/api/chat/", "AI 채팅 - ETF 추천", "POST", {"message": "기술주 ETF 추천해줘"}),
+            ("/api/v1/chat/", "AI 채팅 - AAPL 분석", "POST", {"message": "AAPL 주식에 대해 알려줘"}),
+            ("/api/v1/chat/", "AI 채팅 - ETF 추천", "POST", {"message": "기술주 ETF 추천해줘"}),
         ]
         
         # 3. 각 테스트 실행

@@ -1,13 +1,13 @@
 """
-API 라우터 - 뉴스 관련 엔드포인트
+API 라우터 - 뉴스 관련 엔드포인트 (v1)
 """
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Query
 
-from ..services import get_rss_news_service, get_yfinance_client
+from src.services import get_rss_news_service, get_yfinance_client
 
-router = APIRouter(prefix="/api/news", tags=["News"])
+router = APIRouter(prefix="/api/v1/news", tags=["News"])
 
 
 @router.get("/market")
@@ -22,7 +22,6 @@ async def get_market_news(
     yfinance = get_yfinance_client()
     news = yfinance.get_market_news(category)
     
-    # 제한된 개수만 반환
     return news[:limit] if news else []
 
 
@@ -37,9 +36,8 @@ async def get_global_news(
     """글로벌 금융 뉴스 조회 (RSS 피드)"""
     rss_service = get_rss_news_service()
     
-    # 소스 파싱
     if sources == "all":
-        source_list = None  # 모든 소스
+        source_list = None
     else:
         source_list = [s.strip() for s in sources.split(",")]
     
@@ -59,7 +57,6 @@ async def search_news(
     """뉴스 검색"""
     rss_service = get_rss_news_service()
     
-    # 소스 파싱
     if sources == "all":
         source_list = None
     else:

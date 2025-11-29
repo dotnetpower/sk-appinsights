@@ -1,5 +1,5 @@
 """
-Live Metrics API Router
+Live Metrics API Router (v1)
 실시간 트래픽 및 메트릭 스트리밍 (Container App Logs 기반)
 """
 import asyncio
@@ -13,10 +13,10 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
-from ..config import get_settings
+from src.config import get_settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/live-metrics", tags=["live-metrics"])
+router = APIRouter(prefix="/api/v1/live-metrics", tags=["live-metrics"])
 
 settings = get_settings()
 
@@ -65,7 +65,6 @@ class ConnectionManager:
                 logger.error(f"메시지 전송 실패: {e}")
                 disconnected.append(connection)
         
-        # 연결 해제된 클라이언트 제거
         for conn in disconnected:
             self.disconnect(conn)
     
@@ -73,9 +72,10 @@ class ConnectionManager:
         """요청 로그 추가 및 개별 요청 브로드캐스트 (비동기)"""
         self.current_minute_requests.append(log_data)
         
-        # 개별 요청 이벤트 즉시 브로드캐스트
         if self.active_connections:
-            logger.debug(f"📡 브로드캐스팅 new_request to {len(self.active_connections)} clients: {log_data['method']} {log_data['path']}")
+            logger.debug(
+                f"📡 브로드캐스팅 new_request to {len(self.active_connections)} clients: {log_data['method']} {log_data['path']}"
+            )
             await self.broadcast({
                 "type": "new_request",
                 "data": log_data
@@ -87,7 +87,6 @@ class ConnectionManager:
         """요청 로그 추가 (동기 래퍼)"""
         self.current_minute_requests.append(log_data)
         
-        # 비동기 브로드캐스트를 백그라운드 태스크로 실행
         if self.active_connections and self._loop:
             asyncio.run_coroutine_threadsafe(
                 self.broadcast({
@@ -97,7 +96,7 @@ class ConnectionManager:
                 self._loop
             )
     
-    def calculate_metrics(self) -> MetricData:
+    def calculate_metrics(self) -> 'MetricData':
         """현재 분의 메트릭 계산"""
         if not self.current_minute_requests:
             return MetricData(
@@ -133,11 +132,9 @@ manager = ConnectionManager()
 def parse_container_log(log_line: str) -> Dict[str, Any] | None:
     """
     Container App 로그 파싱
-    FastAPI 로그 형식: INFO:     127.0.0.1:12345 - "GET /api/etf/list HTTP/1.1" 200 OK
+    FastAPI 로그 형식: INFO:     127.0.0.1:12345 - "GET /api/v1/etf/list HTTP/1.1" 200 OK
     """
     try:
-        # FastAPI/Uvicorn 로그 패턴
-        # 예: INFO:     127.0.0.1:12345 - "GET /api/etf/list HTTP/1.1" 200 OK
         pattern = r'(?P<level>\w+):\s+(?P<client>[\d\.:]+)\s+-\s+"(?P<method>\w+)\s+(?P<path>[^\s]+)\s+HTTP/[\d\.]+"\s+(?P<status>\d+)'
         match = re.search(pattern, log_line)
         
@@ -147,11 +144,9 @@ def parse_container_log(log_line: str) -> Dict[str, Any] | None:
                 'method': match.group('method'),
                 'path': match.group('path'),
                 'status_code': int(match.group('status')),
-                'duration': 0,  # 로그에서 추출 불가, 기본값
+                'duration': 0,
             }
         
-        # Application Insights 형식 로그 (duration 포함)
-        # 예: {"timestamp": "...", "duration": 123, "resultCode": 200}
         if '{' in log_line and '}' in log_line:
             try:
                 json_match = re.search(r'\{.*\}', log_line)
@@ -182,28 +177,23 @@ async def stream_container_logs():
     import os
     import shutil
 
-    # 토글 상태 확인: False면 더미 로그 생성 안 함
     if not manager.use_dummy_logs:
         logger.info("✅ 실제 트래픽 모드: 미들웨어에서 HTTP 요청을 Live Metrics에 전송합니다.")
-        # 무한 대기 (더미 로그 생성 안 함)
         while True:
             await asyncio.sleep(60)
         return
     
-    # 더미 로그 모드
     logger.warning(f"🎲 더미 로그 모드 활성화 (environment={settings.environment})")
     
     container_app_name = os.getenv("CONTAINER_APP_NAME", "ca-sk-appinsights")
     resource_group = os.getenv("RESOURCE_GROUP", "rg-sk-appinsights")
     
-    # Azure CLI 설치 확인
     if not shutil.which("az"):
         logger.warning("Azure CLI가 설치되지 않았습니다. 더미 데이터 모드로 전환합니다.")
         await stream_dummy_logs()
         return
     
     try:
-        # az containerapp logs show --name <name> --resource-group <rg> --follow --tail 0
         cmd = [
             "az", "containerapp", "logs", "show",
             "--name", container_app_name,
@@ -214,26 +204,22 @@ async def stream_container_logs():
         
         logger.info(f"Container App 로그 스트리밍 시작: {container_app_name}")
         
-        # asyncio subprocess 사용
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
         
-        # stdout가 None이 아닌지 확인
         if process.stdout is None:
             logger.error("프로세스 stdout이 None입니다.")
             await stream_dummy_logs()
             return
         
-        # 로그 읽기 루프
         while True:
             line = await process.stdout.readline()
             if not line:
                 break
             
-            # 로그 파싱
             log_line = line.decode('utf-8').strip()
             log_data = parse_container_log(log_line)
             if log_data:
@@ -241,7 +227,6 @@ async def stream_container_logs():
             
     except FileNotFoundError:
         logger.error("Azure CLI가 설치되지 않았습니다. 더미 데이터를 생성합니다.")
-        # 더미 데이터 생성 모드
         await stream_dummy_logs()
     except Exception as e:
         logger.error(f"로그 스트리밍 오류: {e}", exc_info=True)
@@ -258,12 +243,10 @@ async def stream_dummy_logs():
     
     while True:
         try:
-            # 토글이 꺼지면 종료
             if not manager.use_dummy_logs:
                 logger.info("🛑 더미 로그 생성 중단 (토글 비활성화)")
                 break
             
-            # 초당 1-3개의 더미 요청 생성 (CPU 절약)
             num_requests = random.randint(1, 3)
             logger.info(f"🔄 {num_requests}개 더미 요청 생성 중...")
             
@@ -271,20 +254,19 @@ async def stream_dummy_logs():
                 log_data = {
                     'timestamp': datetime.utcnow().isoformat(),
                     'method': random.choice(['GET', 'POST', 'PUT', 'DELETE']),
-                    'path': random.choice(['/api/etf/list', '/api/stocks/AAPL', '/api/chat/', '/api/news/market']),
+                    'path': random.choice(['/api/v1/etf/list', '/api/v1/stocks/AAPL', '/api/v1/chat/', '/api/v1/news/market']),
                     'status_code': random.choices([200, 201, 400, 404, 500], weights=[85, 5, 5, 3, 2])[0],
                     'duration': random.uniform(10, 300),
                 }
                 logger.debug(f"📤 더미 요청 생성: {log_data['method']} {log_data['path']} - {log_data['status_code']}")
                 await manager.add_request_log_async(log_data)
             
-            await asyncio.sleep(1.5)  # 1초 → 1.5초로 증가
+            await asyncio.sleep(1.5)
         except Exception as e:
             logger.error(f"더미 로그 생성 오류: {e}", exc_info=True)
             await asyncio.sleep(1)
 
 
-# 백그라운드 작업: 로그 스트리밍
 log_streaming_task = None
 log_streaming_started = False
 
@@ -306,16 +288,13 @@ async def metrics_aggregation_loop():
     """
     while True:
         try:
-            # 메트릭 계산
             metrics = manager.calculate_metrics()
             
-            # 클라이언트에 브로드캐스트
             await manager.broadcast({
                 "type": "traffic_update",
                 "data": metrics.model_dump()
             })
             
-            # 1분마다 버퍼 리셋
             if (datetime.utcnow() - manager.last_reset).total_seconds() >= 60:
                 manager.reset_minute_buffer()
             
@@ -335,21 +314,17 @@ async def websocket_traffic(websocket: WebSocket):
     logger.info("🔌 새로운 WebSocket 연결 요청")
     await manager.connect(websocket)
     
-    # 이벤트 루프 설정
     manager.set_event_loop(asyncio.get_event_loop())
     logger.info("⚙️ 이벤트 루프 설정 완료")
     
-    # 로그 스트리밍 시작
     logger.info("🚀 로그 스트리밍 시작 호출...")
     await start_log_streaming()
     logger.info("✅ 로그 스트리밍 시작 완료")
     
-    # 메트릭 집계 태스크 시작
     aggregation_task = asyncio.create_task(metrics_aggregation_loop())
     logger.info("📊 메트릭 집계 태스크 시작")
     
     try:
-        # 클라이언트로부터 메시지 대기 (연결 유지)
         while True:
             try:
                 await websocket.receive_text()
@@ -364,7 +339,6 @@ async def websocket_traffic(websocket: WebSocket):
         logger.error(f"WebSocket 오류: {e}", exc_info=True)
         manager.disconnect(websocket)
     finally:
-        # 집계 태스크 취소
         aggregation_task.cancel()
         logger.info("🛑 메트릭 집계 태스크 종료")
 
@@ -387,7 +361,6 @@ async def get_metrics_history(minutes: int = 60):
     """
     import random
 
-    # 더미 히스토리 데이터 생성
     history = []
     for i in range(min(minutes, 60)):
         timestamp = datetime.utcnow() - timedelta(minutes=minutes-i)
@@ -411,13 +384,11 @@ async def toggle_dummy_logs(enabled: bool):
     """
     manager.use_dummy_logs = enabled
     
-    # 로그 스트리밍 재시작이 필요한 경우
     global log_streaming_task, log_streaming_started
     if log_streaming_task and not log_streaming_task.done():
         log_streaming_task.cancel()
         log_streaming_started = False
     
-    # 활성화된 경우 새로운 스트리밍 시작
     if enabled:
         await start_log_streaming()
     
@@ -445,9 +416,6 @@ async def get_dummy_logs_status():
 async def startup_event():
     """앱 시작 시 로그 스트리밍 시작"""
     logger.info("🎯 Live Metrics 서비스 시작")
-    # 환경에 따라 초기 토글 상태 설정
-    # production에서는 실제 트래픽만 사용 (더미 로그 비활성화)
     manager.use_dummy_logs = settings.environment.lower() != "production"
     logger.info(f"초기 더미 로그 상태: {manager.use_dummy_logs} (environment: {settings.environment})")
     logger.info("✅ Production: 실제 HTTP 트래픽이 미들웨어를 통해 Live Metrics에 전송됩니다.")
-    # WebSocket 연결 시 시작되도록 변경 (startup에서는 시작하지 않음)

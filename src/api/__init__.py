@@ -1,6 +1,5 @@
-"""
-API 패키지 초기화
-"""
-from . import etf, stocks, news, chat
+"""API 패키지 초기화 및 버전 네임스페이스."""
 
-__all__ = ["etf", "stocks", "news", "chat"]
+from . import v1
+
+__all__ = ["v1"]

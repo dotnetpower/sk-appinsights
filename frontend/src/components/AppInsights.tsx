@@ -171,7 +171,7 @@ const AppInsights: React.FC = () => {
           ? ""
           : "http://localhost:8000";
 
-      const response = await fetch(`${API_BASE_URL}/api/insights/query`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/insights/query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -9,6 +9,9 @@ const API_BASE_URL =
     ? ""
     : "http://localhost:8000";
 
+const API_PREFIX = "/api/v1";
+const withPrefix = (path: string) => `${API_PREFIX}${path}`;
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -81,53 +84,61 @@ api.interceptors.response.use(
 
 // ETF API
 export const etfApi = {
-  list: (limit: number = 20) => api.get(`/api/etf/list?limit=${limit}`),
-  getDetail: (symbol: string) => api.get(`/api/etf/${symbol}`),
-  getHoldings: (symbol: string) => api.get(`/api/etf/${symbol}/holdings`),
-  refresh: (symbol: string) => api.post(`/api/etf/${symbol}/refresh`),
-  delete: (symbol: string) => api.delete(`/api/etf/${symbol}`),
+  list: (limit: number = 20) => api.get(withPrefix(`/etf/list?limit=${limit}`)),
+  getDetail: (symbol: string) => api.get(withPrefix(`/etf/${symbol}`)),
+  getHoldings: (symbol: string) =>
+    api.get(withPrefix(`/etf/${symbol}/holdings`)),
+  refresh: (symbol: string) => api.post(withPrefix(`/etf/${symbol}/refresh`)),
+  delete: (symbol: string) => api.delete(withPrefix(`/etf/${symbol}`)),
 };
 
 // Stocks API
 export const stocksApi = {
-  getDetail: (symbol: string) => api.get(`/api/stocks/${symbol}`),
-  getQuote: (symbol: string) => api.get(`/api/stocks/${symbol}/quote`),
+  getDetail: (symbol: string) => api.get(withPrefix(`/stocks/${symbol}`)),
+  getQuote: (symbol: string) => api.get(withPrefix(`/stocks/${symbol}/quote`)),
   getQuotes: (symbols: string[]) =>
-    api.get(`/api/stocks/batch-quotes?symbols=${symbols.join(",")}`),
+    api.get(withPrefix(`/stocks/batch-quotes?symbols=${symbols.join(",")}`)),
   getNews: (symbol: string, days: number = 7) =>
-    api.get(`/api/stocks/${symbol}/news?days=${days}`),
+    api.get(withPrefix(`/stocks/${symbol}/news?days=${days}`)),
   getCandles: (symbol: string, resolution: string = "D", days: number = 30) =>
     api.get(
-      `/api/stocks/${symbol}/candles?resolution=${resolution}&days=${days}`
+      withPrefix(
+        `/stocks/${symbol}/candles?resolution=${resolution}&days=${days}`
+      )
     ),
-  search: (query: string) => api.get(`/api/stocks/search?q=${query}`),
+  search: (query: string) => api.get(withPrefix(`/stocks/search?q=${query}`)),
 };
 
 // News API
 export const newsApi = {
   getMarket: (category: string = "general", limit: number = 20) =>
-    api.get(`/api/news/market?category=${category}&limit=${limit}`),
+    api.get(withPrefix(`/news/market?category=${category}&limit=${limit}`)),
   getGlobal: (sources: string = "all", limit: number = 30) =>
-    api.get(`/api/news/global?sources=${sources}&limit=${limit}`),
+    api.get(withPrefix(`/news/global?sources=${sources}&limit=${limit}`)),
   search: (query: string, sources: string = "all", limit: number = 20) =>
     api.get(
-      `/api/news/search?q=${encodeURIComponent(
-        query
-      )}&sources=${sources}&limit=${limit}`
+      withPrefix(
+        `/news/search?q=${encodeURIComponent(
+          query
+        )}&sources=${sources}&limit=${limit}`
+      )
     ),
 };
 
 // Chat API
 export const chatApi = {
-  send: (message: string) => api.post("/api/chat/", { message }),
+  send: (message: string) => api.post(withPrefix("/chat/"), { message }),
   stream: async (message: string, onChunk: (chunk: string) => void) => {
-    const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}${withPrefix("/chat/stream")}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error("스트리밍 요청 실패");
@@ -148,7 +159,7 @@ export const chatApi = {
       onChunk(chunk);
     }
   },
-  reset: () => api.post("/api/chat/reset"),
+  reset: () => api.post(withPrefix("/chat/reset")),
 };
 
 // Analytics API
@@ -159,7 +170,7 @@ export const analyticsApi = {
     user_id?: string;
     session_id?: string;
     metadata?: Record<string, any>;
-  }) => api.post("/api/analytics/page-view", data),
+  }) => api.post(withPrefix("/analytics/page-view"), data),
 
   trackEvent: (data: {
     event_name: string;
@@ -167,7 +178,7 @@ export const analyticsApi = {
     user_id?: string;
     session_id?: string;
     properties?: Record<string, any>;
-  }) => api.post("/api/analytics/event", data),
+  }) => api.post(withPrefix("/analytics/event"), data),
 };
 
 export default api;
