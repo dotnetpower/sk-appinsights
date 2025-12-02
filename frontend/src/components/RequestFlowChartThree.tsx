@@ -174,7 +174,7 @@ const RequestFlowChartThree: React.FC<RequestFlowChartThreeProps> = ({
   const lastParticleCountRef = useRef(0);
   const lastCountUpdateRef = useRef(0);
 
-  const MAX_PARTICLES = 50;
+  const MAX_PARTICLES = 500;
   const HEIGHT = isMobile ? 150 : 200;
   const COUNT_UPDATE_INTERVAL = 200; // ms 간격으로만 UI 업데이트
 
