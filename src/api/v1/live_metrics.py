@@ -385,9 +385,17 @@ async def toggle_dummy_logs(enabled: bool):
     manager.use_dummy_logs = enabled
     
     global log_streaming_task, log_streaming_started
+    
+    # 기존 task 취소
     if log_streaming_task and not log_streaming_task.done():
         log_streaming_task.cancel()
-        log_streaming_started = False
+        try:
+            await log_streaming_task
+        except asyncio.CancelledError:
+            pass
+    
+    # 항상 리셋하여 새로운 스트리밍 시작 가능하도록 함
+    log_streaming_started = False
     
     if enabled:
         await start_log_streaming()
