@@ -390,8 +390,8 @@ async def toggle_dummy_logs(enabled: bool):
     if log_streaming_task and not log_streaming_task.done():
         log_streaming_task.cancel()
         try:
-            await log_streaming_task
-        except asyncio.CancelledError:
+            await asyncio.wait_for(log_streaming_task, timeout=5.0)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
             pass
     
     # 항상 리셋하여 새로운 스트리밍 시작 가능하도록 함
